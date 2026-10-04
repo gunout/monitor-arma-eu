@@ -1,0 +1,4 @@
+pip install requests
+python build_arma_json.py --source eu --out arma.json
+# ou pour le portail ukrainien :
+python build_arma_json.py --source ua --out arma.json

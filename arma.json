@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-10-04T22:26:26.826531Z",
+  "source": "local",
+  "count": 1,
+  "results": [
+    {
+      "id": "arma-budget-program-reports",
+      "title": "Звіти про виконання паспортів бюджетних програм АРМА",
+      "description": "Сукупність річних звітів про виконання паспортів бюджетних програм Національного агентства України з питань виявлення, розшуку та управління активами, одержаними від корупційних та інших злочинів (АРМА). Джерело : data.gov.ua",
+      "organization": {
+        "name": "Національне агентство України з питань виявлення, розшуку та управління активами (АРМА)"
+      },
+      "tags": [
+        "arma",
+        "бюджет",
+        "паспорт бюджетної програми",
+        "звіт",
+        "2018",
+        "2021",
+        "2024",
+        "2025"
+      ],
+      "last_update": "2026-02-09",
+      "url": "https://data.gov.ua/",
+      "popularity": 0,
+      "resources": [
+        {
+          "title": "Звіт про виконання паспорта бюджетної програми на 2018 рік",
+          "url": "6-zvit-pro-vikonannia-pasporta-biudzhetnoyi-programi-2018.xls",
+          "format": "xlsx",
+          "size": 254976,
+          "year": 2018
+        },
+        {
+          "title": "Звіт про виконання паспорта бюджетної програми на 2021 рік",
+          "url": "4-zvit-pasporta-2021-arma.xls",
+          "format": "xlsx",
+          "size": 263680,
+          "year": 2021
+        },
+        {
+          "title": "Звіт про виконання паспорта бюджетної програми на 2024 рік",
+          "url": "3-zvit-pro-vikonannia-pasporta-biudzhetnoyi-programi-na-2024-rik.xls",
+          "format": "xlsx",
+          "size": 385536,
+          "year": 2024
+        },
+        {
+          "title": "Звіт про виконання паспорта бюджетної програми на 2025 рік",
+          "url": "5-zvit-pro-vikonannia-pasporta-biudzhetnoyi-programi-na-2025-rik.xlsx",
+          "format": "xlsx",
+          "size": 119451,
+          "year": 2025
+        }
+      ],
+      "source": "data.gov.ua"
+    }
+  ]
+}

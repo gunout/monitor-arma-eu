@@ -1,0 +1,16 @@
+node_modules/
+package-lock.json
+*.bak
+*.spaghetti.bak
+index.html.v*.bak
+patch_v*.py
+__pycache__/
+*.pyc
+*.xls
+*.xlsx
+*.zip
+data.gov.ua/
+file_report.csv
+.DS_Store
+.vscode/
+*.log

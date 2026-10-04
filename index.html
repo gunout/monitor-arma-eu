@@ -1,0 +1,2645 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🇺🇦 Монітор АРМА — Експертиза бюджетних програм</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ua-blue:#0057B7;--ua-blue-hi:#0a6fd8;--ua-blue-soft:#e3f0fd;
+  --ua-yellow:#FFD700;--ua-yellow-soft:#fff8d6;
+  --red:#c8102e;--red-soft:#ffe9e9;
+  --white:#fff;--grey-50:#f7f8fa;--grey-100:#eef0f3;--grey-200:#e0e3e8;
+  --grey-500:#8a8f99;--grey-700:#3a3f4a;--grey-900:#1a1d24;
+  --green:#18753c;--green-soft:#e3f5e9;
+  --amber:#b8860b;--amber-soft:#fff3cd;
+  --font-mono:'SF Mono',Menlo,Consolas,'Courier New',monospace;
+  --font-sans:'Inter','system-ui',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+html,body{height:100%}
+body{font-family:var(--font-sans);background:var(--grey-50);color:var(--grey-900);
+  font-size:13px;line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--grey-100)}
+::-webkit-scrollbar-thumb{background:var(--grey-500);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--ua-blue)}
+
+.ua-band{height:6px;background:linear-gradient(to bottom,
+  var(--ua-blue) 0%,var(--ua-blue) 50%,var(--ua-yellow) 50%,var(--ua-yellow) 100%)}
+.bloc-marque{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--white);border-bottom:1px solid var(--grey-200)}
+.bloc-marque-logo{font-weight:700;font-size:12px;color:var(--grey-900);letter-spacing:.3px;
+  text-transform:uppercase;border-right:1px solid var(--grey-200);padding-right:12px;line-height:1.3}
+.bloc-marque-devise em{display:block;font-style:normal;text-transform:uppercase;
+  letter-spacing:1.2px;font-size:9px;color:var(--grey-500)}
+
+.topbar{background:var(--white);border-bottom:1px solid var(--grey-200);display:flex;align-items:center;
+  padding:10px 16px;gap:12px;position:sticky;top:6px;z-index:100;flex-wrap:wrap}
+.brand{font-size:14px;font-weight:700;color:var(--ua-blue);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--ua-yellow);
+  box-shadow:0 0 0 3px rgba(255,215,0,.25);animation:pulse 1.8s infinite;flex-shrink:0}
+.brand .dot.ready{background:var(--green);box-shadow:0 0 0 3px rgba(24,117,60,.2)}
+.brand .dot.offline{background:var(--red);box-shadow:0 0 0 3px rgba(200,16,46,.2);animation:none}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+.brand .sub{color:var(--grey-500);font-weight:400;font-size:12px;font-family:var(--font-mono)}
+
+.topbar-right{margin-left:auto;display:flex;gap:14px;font-family:var(--font-mono);font-size:11px;
+  align-items:center;flex-wrap:wrap}
+.topbar-stat{display:flex;gap:5px;color:var(--grey-700);align-items:center}
+.topbar-stat .val{color:var(--ua-blue);font-weight:700;padding:2px 6px;border-radius:3px;background:var(--ua-blue-soft)}
+.topbar-stat .val.green{color:var(--green);background:var(--green-soft)}
+.topbar-stat .val.amber{color:var(--amber);background:var(--amber-soft)}
+.topbar-stat .val.red{color:var(--red);background:var(--red-soft)}
+
+.app{display:grid;grid-template-columns:260px 1fr 380px;height:calc(100vh - 130px);overflow:hidden}
+
+.sidebar{background:var(--white);border-right:1px solid var(--grey-200);display:flex;flex-direction:column;overflow:hidden}
+.sb-head{padding:14px 16px;border-bottom:1px solid var(--grey-200);background:var(--grey-50)}
+.sb-title{font-size:12px;font-weight:700;color:var(--ua-blue);letter-spacing:.5px;
+  text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.sb-title::before{content:'';width:4px;height:14px;background:var(--ua-yellow)}
+.sb-count{font-family:var(--font-mono);font-size:11px;color:var(--grey-500);margin-top:6px}
+.sb-search{padding:10px 14px;border-bottom:1px solid var(--grey-200)}
+.sb-search input{width:100%;background:var(--white);border:1px solid var(--grey-200);
+  border-radius:4px;color:var(--grey-900);padding:9px 12px;font-size:13px}
+.sb-search input:focus{outline:none;border-color:var(--ua-blue);box-shadow:0 0 0 2px var(--ua-blue-soft)}
+.sb-list{flex:1;overflow-y:auto;padding:8px}
+
+.source-item{background:var(--white);border:1px solid var(--grey-200);border-left:4px solid var(--ua-blue);
+  border-radius:4px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:.15s}
+.source-item:hover{border-color:var(--ua-blue);background:var(--ua-blue-soft)}
+.source-item.active{background:var(--ua-blue-soft);border-left-color:var(--ua-yellow)}
+.source-item.active .source-item-name{color:var(--ua-blue)}
+.source-item-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.source-item-icon{font-size:16px}
+.source-item-name{font-size:12px;font-weight:700;color:var(--grey-900);flex:1}
+.source-item-meta{display:flex;gap:8px;font-family:var(--font-mono);font-size:10px;color:var(--grey-500);margin-top:4px;flex-wrap:wrap}
+.source-item-count{background:var(--grey-100);padding:2px 6px;border-radius:3px;color:var(--grey-700);font-weight:600}
+
+.center{background:var(--grey-50);display:flex;flex-direction:column;overflow:hidden}
+.search-bar{padding:14px 16px;background:var(--white);border-bottom:1px solid var(--grey-200);
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search-bar input[type=text]{flex:1;min-width:200px;border:1px solid var(--grey-200);
+  border-radius:4px;padding:11px 14px;font-size:14px}
+.search-bar input[type=text]:focus{outline:none;border-color:var(--ua-blue);box-shadow:0 0 0 2px var(--ua-blue-soft)}
+.search-bar select{border:1px solid var(--grey-200);border-radius:4px;padding:11px 12px;font-size:13px}
+.search-btn{background:var(--ua-blue);color:var(--white);border:1px solid var(--ua-blue);
+  font-size:13px;font-weight:700;padding:11px 20px;border-radius:4px;cursor:pointer;transition:.15s}
+.search-btn:hover{background:var(--ua-blue-hi)}
+
+.tabs-view{display:flex;gap:0;padding:0 10px;border-bottom:1px solid var(--grey-200);
+  background:var(--white);overflow-x:auto;scrollbar-width:none}
+.tabs-view::-webkit-scrollbar{display:none}
+.view-tab{background:transparent;border:none;color:var(--grey-700);font-size:12px;font-weight:500;
+  padding:10px 14px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:.15s}
+.view-tab:hover{background:var(--grey-50);color:var(--ua-blue)}
+.view-tab.active{color:var(--ua-blue);border-bottom-color:var(--ua-blue);font-weight:700}
+.view-tab .badge{background:var(--red);color:var(--white);font-size:9px;
+  padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:700}
+
+.results{flex:1;overflow-y:auto;padding:14px}
+
+.result-card{background:var(--white);border:1px solid var(--grey-200);border-left:4px solid var(--ua-blue);
+  border-radius:4px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.result-card:hover{border-color:var(--ua-blue);box-shadow:0 4px 12px rgba(0,87,183,.08);transform:translateX(2px)}
+.result-card.selected{border-left-color:var(--ua-yellow);box-shadow:0 0 0 2px var(--ua-blue-soft)}
+.rc-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.rc-title{font-size:14px;font-weight:700;color:var(--grey-900);flex:1;line-height:1.35}
+.rc-badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.rc-badge{font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 7px;border-radius:3px;
+  text-transform:uppercase;white-space:nowrap;letter-spacing:.5px}
+.rc-badge.cat{background:var(--green);color:var(--white)}
+.rc-badge.pop{background:var(--ua-yellow);color:var(--grey-900)}
+.rc-badge.csv{background:#b8fec9;color:#0d5726}
+.rc-badge.json{background:#d6e9ff;color:#003c99}
+.rc-badge.xlsx{background:#ffe9b8;color:#7a4d00}
+.rc-badge.other{background:var(--grey-100);color:var(--grey-700)}
+.rc-badge.alert{background:var(--red);color:var(--white)}
+.rc-desc{font-size:12px;color:var(--grey-700);line-height:1.55;margin-bottom:8px}
+.rc-meta{display:flex;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--grey-500);flex-wrap:wrap;margin-top:8px}
+.rc-meta .tag{background:var(--grey-50);padding:3px 8px;border-radius:3px;border:1px solid var(--grey-200);color:var(--grey-700)}
+.rc-org{color:var(--grey-700);font-weight:600;font-size:12px;margin-bottom:6px}
+
+.expert-zone{display:flex;flex-direction:column;gap:14px}
+.expert-header{background:var(--white);border:1px solid var(--grey-200);border-left:4px solid var(--ua-yellow);
+  border-radius:4px;padding:14px 18px}
+.expert-header h2{font-size:16px;font-weight:700;color:var(--ua-blue);margin-bottom:4px}
+.expert-header .sub{font-size:12px;color:var(--grey-700)}
+.expert-header .sub code{background:var(--grey-100);padding:1px 6px;border-radius:3px;
+  font-family:var(--font-mono);font-size:10px;color:var(--grey-700)}
+
+.global-actions{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--white);
+  border-bottom:1px solid var(--grey-200)}
+.action-btn{padding:8px 14px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;
+  border:1px solid var(--ua-blue);background:var(--white);color:var(--ua-blue);transition:.15s;
+  display:inline-flex;align-items:center;gap:6px}
+.action-btn:hover{background:var(--ua-blue-soft)}
+.action-btn.primary{background:var(--ua-blue);color:var(--white)}
+.action-btn.primary:hover{background:var(--ua-blue-hi)}
+
+.res-card{background:var(--white);border:1px solid var(--grey-200);border-radius:6px;overflow:hidden}
+.res-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--grey-50);border-bottom:1px solid var(--grey-200);flex-wrap:wrap}
+.res-head .fmt-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;font-weight:800}
+.res-head .fmt-icon.csv{background:#b8fec9;color:#0d5726}
+.res-head .fmt-icon.json{background:#d6e9ff;color:#003c99}
+.res-head .fmt-icon.xlsx{background:#ffe9b8;color:#7a4d00}
+.res-head .fmt-icon.other{background:var(--grey-100);color:var(--grey-700)}
+.res-head .info{flex:1;min-width:200px}
+.res-head .name{font-weight:700;font-size:13px;color:var(--grey-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res-head .url{font-size:10px;color:var(--grey-500);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.btn-sm{padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;transition:.15s}
+.btn-sm.primary{background:var(--ua-blue);color:var(--white);border-color:var(--ua-blue)}
+.btn-sm.primary:hover{background:var(--ua-blue-hi)}
+.btn-sm.secondary{background:var(--white);color:var(--ua-blue);border-color:var(--ua-blue)}
+.btn-sm.secondary:hover{background:var(--ua-blue-soft)}
+.btn-sm:disabled{opacity:.5;cursor:not-allowed}
+.res-body{padding:14px 16px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:14px}
+.stat-box{background:var(--grey-50);border:1px solid var(--grey-200);border-radius:4px;padding:10px 12px;text-align:center}
+.stat-box .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--grey-500);font-weight:700}
+.stat-box .val{font-size:20px;font-weight:800;color:var(--ua-blue);font-family:var(--font-mono);margin-top:4px;line-height:1.1;word-break:break-word}
+.stat-box .unit{font-size:10px;color:var(--grey-500);margin-top:2px}
+.stat-box.warn .val{color:var(--amber)}
+.stat-box.bad .val{color:var(--red)}
+.stat-box.good .val{color:var(--green)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--grey-200);border-radius:4px;max-height:400px}
+table.preview{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--font-mono)}
+table.preview th{background:var(--grey-50);text-align:left;padding:8px 10px;
+  border-bottom:1px solid var(--grey-200);font-weight:700;color:var(--ua-blue);
+  position:sticky;top:0;z-index:1;white-space:nowrap}
+table.preview td{padding:6px 10px;border-bottom:1px solid var(--grey-100);color:var(--grey-700);
+  white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+table.preview tr:last-child td{border-bottom:none}
+table.preview td.empty{color:var(--grey-500);font-style:italic}
+table.preview td.number{color:var(--ua-blue);text-align:right}
+
+.status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:3px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.status.ok{background:var(--green-soft);color:var(--green)}
+.status.err{background:var(--red-soft);color:var(--red)}
+.status.loading{background:var(--amber-soft);color:var(--amber)}
+
+.analysis-section{background:var(--white);border:1px solid var(--grey-200);border-radius:6px;
+  padding:14px 16px;margin-top:14px}
+.analysis-section h3{font-size:12px;font-weight:700;color:var(--ua-blue);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;justify-content:space-between}
+.analysis-section h3::before{content:'';width:3px;height:12px;background:var(--ua-yellow);
+  position:absolute;margin-left:-14px}
+.analysis-section h3 > span:first-child{display:flex;align-items:center;gap:6px}
+
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:14px}
+.chart-card{background:var(--white);border:1px solid var(--grey-200);border-radius:6px;padding:12px;overflow:hidden}
+.chart-card h4{font-size:11px;font-weight:700;color:var(--ua-blue);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--grey-100)}
+.chart-canvas-wrap{position:relative;height:220px}
+
+.insight-list{display:flex;flex-direction:column;gap:6px}
+.insight{display:flex;gap:8px;padding:8px 10px;border-radius:4px;font-size:12px;line-height:1.4;
+  border-left:3px solid}
+.insight.info{background:#eef6ff;border-left-color:var(--ua-blue)}
+.insight.warn{background:#fff8e6;border-left-color:var(--ua-yellow)}
+.insight.err{background:#ffebee;border-left-color:var(--red)}
+.insight.ok{background:var(--green-soft);border-left-color:var(--green)}
+.insight .ico{font-size:14px;flex-shrink:0}
+.insight .txt{flex:1;color:var(--grey-700)}
+.insight .txt strong{color:var(--grey-900)}
+
+.stats-table{width:100%;border-collapse:collapse;font-size:11px}
+.stats-table th{background:var(--grey-50);padding:8px 10px;text-align:left;
+  border-bottom:1px solid var(--grey-200);font-weight:700;color:var(--ua-blue)}
+.stats-table td{padding:6px 10px;border-bottom:1px solid var(--grey-100);font-family:var(--font-mono)}
+.stats-table tr:last-child td{border-bottom:none}
+.stats-table .col-name{font-family:var(--font-sans);font-weight:600;color:var(--grey-700)}
+
+.dup-list{max-height:200px;overflow-y:auto;font-family:var(--font-mono);font-size:11px}
+.dup-item{padding:4px 8px;border-bottom:1px solid var(--grey-100);color:var(--grey-700)}
+.dup-item:last-child{border-bottom:none}
+
+.outlier-list{max-height:240px;overflow-y:auto}
+.outlier{padding:6px 10px;border-bottom:1px solid var(--grey-100);font-size:11px;display:flex;justify-content:space-between;gap:10px}
+.outlier:last-child{border-bottom:none}
+.outlier .val{font-family:var(--font-mono);font-weight:700;color:var(--red)}
+.outlier .ctx{color:var(--grey-500);font-family:var(--font-mono);font-size:10px;text-align:right}
+
+.corr-list{display:flex;flex-direction:column;gap:4px}
+.corr-row{display:flex;align-items:center;gap:8px;font-size:11px;padding:4px 8px;border-radius:3px;background:var(--grey-50)}
+.corr-row .pair{flex:1;font-family:var(--font-mono);color:var(--grey-700)}
+.corr-row .val{font-family:var(--font-mono);font-weight:700;padding:2px 6px;border-radius:3px}
+.corr-row .val.pos{background:#b8fec9;color:#0d5726}
+.corr-row .val.neg{background:#ffd4d4;color:#99000b}
+
+.pii-list{display:flex;flex-direction:column;gap:8px}
+.pii-row{background:#fff8e6;border-left:3px solid var(--ua-yellow);
+  padding:8px 10px;border-radius:4px;font-size:11px;display:flex;gap:10px;align-items:flex-start}
+.pii-row.critical{background:#ffebee;border-left-color:var(--red)}
+.pii-row .pii-icon{font-size:14px;flex-shrink:0}
+.pii-row .pii-body{flex:1}
+.pii-row .pii-type{font-weight:700;color:var(--grey-900)}
+.pii-row .pii-col{font-family:var(--font-mono);color:var(--grey-700);font-size:10px;margin-top:2px}
+.pii-row .pii-sample{font-family:var(--font-mono);color:var(--grey-500);font-size:10px;margin-top:4px;
+  background:var(--grey-50);padding:4px 6px;border-radius:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.alerts-list{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto}
+.alert-item{background:var(--white);border:1px solid var(--grey-200);border-left:4px solid var(--ua-yellow);
+  padding:10px 12px;border-radius:4px;cursor:pointer;transition:.15s}
+.alert-item:hover{background:var(--grey-50);transform:translateX(2px)}
+.alert-item.critical{border-left-color:var(--red)}
+.alert-item .head{display:flex;justify-content:space-between;gap:10px;margin-bottom:4px}
+.alert-item .title{font-weight:700;font-size:12px;color:var(--grey-900);flex:1}
+.alert-item .severity{font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;text-transform:uppercase}
+.alert-item .severity.warn{background:var(--amber-soft);color:var(--amber)}
+.alert-item .severity.crit{background:var(--red-soft);color:var(--red)}
+.alert-item .reason{font-size:11px;color:var(--grey-700);margin-top:2px}
+
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.compare-panel{background:var(--white);border:1px solid var(--grey-200);border-radius:6px;padding:12px}
+.compare-panel h4{font-size:11px;font-weight:700;color:var(--ua-blue);text-transform:uppercase;
+  margin-bottom:8px;border-bottom:1px solid var(--grey-100);padding-bottom:6px}
+.compare-row{display:flex;justify-content:space-between;padding:5px 0;font-size:11px;
+  border-bottom:1px solid var(--grey-100)}
+.compare-row:last-child{border-bottom:none}
+.compare-row .k{color:var(--grey-700)}
+.compare-row .v{font-family:var(--font-mono);font-weight:700;color:var(--grey-900)}
+.compare-diff{background:#eef6ff;border-left:3px solid var(--ua-blue);
+  padding:8px 12px;border-radius:4px;margin-top:10px;font-size:11px;color:var(--grey-700)}
+
+.empty,.loading-state{text-align:center;padding:60px 20px;color:var(--grey-500);font-size:14px}
+.spin{width:40px;height:40px;border:3px solid var(--grey-200);border-top-color:var(--ua-blue);
+  border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.error-box{background:var(--red-soft);border:1px solid var(--red);border-left-width:4px;
+  color:var(--red);padding:14px;border-radius:4px;font-size:12px;margin-top:8px}
+
+.pagination-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 14px;
+  background:var(--white);border-top:1px solid var(--grey-200);border-bottom:1px solid var(--grey-200)}
+.pagination-info{font-family:var(--font-mono);font-size:11px;color:var(--grey-700);font-weight:600}
+.pagination-info strong{color:var(--ua-blue)}
+.pagination-spacer{flex:1}
+.page-btn{background:var(--white);color:var(--grey-900);border:1px solid var(--grey-200);font-size:12px;
+  font-weight:600;padding:6px 12px;border-radius:4px;cursor:pointer;min-width:36px}
+.page-btn:hover:not(:disabled){border-color:var(--ua-blue);color:var(--ua-blue);background:var(--ua-blue-soft)}
+.page-btn:disabled{opacity:.4;cursor:not-allowed}
+.page-input{width:60px;text-align:center;padding:6px 8px;font-size:12px;font-family:var(--font-mono);
+  font-weight:700;border:1px solid var(--grey-200);border-radius:4px;color:var(--ua-blue)}
+.page-select{border:1px solid var(--grey-200);border-radius:4px;padding:6px 8px;font-size:12px}
+
+.right{background:var(--white);border-left:1px solid var(--grey-200);display:flex;flex-direction:column;overflow:hidden}
+.rs-head{padding:14px 16px;border-bottom:1px solid var(--grey-200);background:var(--grey-50);
+  font-size:12px;font-weight:700;color:var(--ua-blue);letter-spacing:.5px;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px}
+.rs-head::before{content:'';width:4px;height:14px;background:var(--ua-yellow)}
+.rs-body{flex:1;overflow-y:auto;padding:12px}
+
+.intel-panel{background:var(--white);border:1px solid var(--grey-200);border-radius:4px;margin-bottom:10px;overflow:hidden}
+.intel-head{padding:9px 12px;background:var(--grey-50);border-bottom:1px solid var(--grey-200);
+  font-size:11px;font-weight:700;color:var(--ua-blue);letter-spacing:.5px;text-transform:uppercase}
+.intel-body{padding:10px}
+
+.info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--grey-100);font-size:12px}
+.info-row:last-child{border-bottom:none}
+.info-row .k{color:var(--grey-700)}
+.info-row .v{font-family:var(--font-mono);font-weight:700;color:var(--grey-900);text-align:right;max-width:60%}
+
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ua-blue);color:var(--white);
+  padding:12px 18px;border-radius:6px;font-size:13px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,87,183,.25);z-index:10000;
+  animation:slideIn .3s ease-out}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+@keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.modal{background:var(--white);border-radius:8px;max-width:700px;width:100%;
+  max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--grey-200);display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:16px;font-weight:700;color:var(--ua-blue)}
+.modal-close{background:transparent;border:none;font-size:24px;cursor:pointer;color:var(--grey-500);padding:0 8px}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--grey-200);display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<div class="ua-band"></div>
+<div class="bloc-marque">
+  <div class="bloc-marque-logo">Україна<br>АРМА</div>
+  <div class="bloc-marque-devise"><em>Свобода</em><em>Гідність</em><em>Добробут</em></div>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="dot" id="statusDot"></span>
+    МОНІТОР АРМА
+    <span class="sub">/ експертиза бюджетних програм</span>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-stat"><span>ДАНІ</span><span class="val green" id="tbStatus">—</span></div>
+    <div class="topbar-stat"><span>РЕСУРСИ</span><span class="val" id="tbRes">—</span></div>
+    <div class="topbar-stat"><span>АЛЕРТИ</span><span class="val red" id="tbAlerts">0</span></div>
+    <div class="topbar-stat"><span>НАБОРИ</span><span class="val" id="tbCount">—</span></div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-head">
+      <div class="sb-title">🏷️ Категорії</div>
+      <div class="sb-count" id="sbCount">—</div>
+    </div>
+    <div class="sb-search"><input type="text" id="sourceSearch" placeholder="🔍 Фільтр..."></div>
+    <div class="sb-list" id="sbList"></div>
+  </aside>
+
+  <main class="center">
+    <div class="search-bar">
+      <input type="text" id="queryInput" placeholder="🔍 Пошук набору даних АРМА…">
+      <select id="sortSelect">
+        <option value="resources">📎 К-ть ресурсів</option>
+        <option value="popularity">⭐ Популярність</option>
+        <option value="recent">📅 Свіжість</option>
+        <option value="title">🔤 Назва А→Я</option>
+      </select>
+      <button class="search-btn" id="searchBtn">▶ АНАЛІЗ</button>
+    </div>
+
+    <div class="tabs-view">
+      <button class="view-tab active" data-view="results">📋 Результати</button>
+      <button class="view-tab" data-view="expert">🔬 Експертиза</button>
+      <button class="view-tab" data-view="alerts">🚨 Моніторинг <span class="badge" id="alertsTabBadge">0</span></button>
+      <button class="view-tab" data-view="pii">🔒 PII</button>
+    </div>
+
+    <div class="pagination-bar" id="paginationBar" hidden>
+      <span class="pagination-info" id="paginationInfo">—</span>
+      <span class="pagination-spacer"></span>
+      <button class="page-btn" id="pageFirst">⏮</button>
+      <button class="page-btn" id="pagePrev">←</button>
+      <input type="number" class="page-input" id="pageInput" min="1" value="1">
+      <span style="font-size:12px;color:var(--grey-500)" id="pageTotal">/ —</span>
+      <button class="page-btn" id="pageNext">→</button>
+      <button class="page-btn" id="pageLast">⏭</button>
+      <select class="page-select" id="pageSizeSelect">
+        <option value="10">10 / стор</option>
+        <option value="25" selected>25 / стор</option>
+        <option value="50">50 / стор</option>
+      </select>
+    </div>
+
+    <div class="results" id="resultsArea">
+      <div class="loading-state"><div class="spin"></div>Завантаження arma.json…</div>
+    </div>
+  </main>
+
+  <aside class="right">
+    <div class="rs-head">Інтелект</div>
+    <div class="rs-body">
+      <div class="intel-panel">
+        <div class="intel-head">💚 ГЛОБАЛЬНИЙ СТАН</div>
+        <div class="intel-body">
+          <div class="info-row"><span class="k">Набори</span><span class="v" id="ivTotal">—</span></div>
+          <div class="info-row"><span class="k">Ресурси</span><span class="v" id="ivRes">—</span></div>
+          <div class="info-row"><span class="k">Формати</span><span class="v" id="ivFormats">—</span></div>
+          <div class="info-row"><span class="k">Оцінка</span><span class="v" id="ivScore">—</span></div>
+          <div class="info-row"><span class="k">Алерти</span><span class="v" id="ivAlerts">—</span></div>
+          <div class="info-row"><span class="k">Кеш</span><span class="v" id="ivCache">—</span></div>
+        </div>
+      </div>
+      <div class="intel-panel">
+        <div class="intel-head">🎯 ШВИДКІ ДІЇ</div>
+        <div class="intel-body" id="quickActions">
+          <button class="action-btn primary" id="analyzeAll" style="width:100%;justify-content:center;margin-bottom:6px">
+            🔬 Експертиза всіх
+          </button>
+          <button class="action-btn" id="runSurveillance" style="width:100%;justify-content:center;margin-bottom:6px">
+            🚨 Моніторинг
+          </button>
+          <button class="action-btn" id="scanPII" style="width:100%;justify-content:center">
+            🔒 Скан PII
+          </button>
+        </div>
+      </div>
+      <div class="intel-panel">
+        <div class="intel-head">📅 ІСТОРІЯ</div>
+        <div class="intel-body" id="historyPanel" style="text-align:center;color:var(--grey-500);font-size:11px;padding:14px">
+          Аналізів ще не було
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ====================================================================
+// CATÉGORIES ARMA
+// ====================================================================
+const CATEGORIES = [
+  { id: 'budget', nom: 'Бюджет та фінанси', icon: '💰',
+    keywords: ['бюджет','видатк','кошторис','фінанс','програм','паспорт','кредит','витрат','доход','касов','план','факт','кпквк','кекв','розпис'] },
+  { id: 'gestion-actifs', nom: 'Управління активами', icon: '🏛️',
+    keywords: ['актив','майно','управління','розшук','арешт','конфіскац','реалізац','оцінк','зберігання','передач','реєстр'] },
+  { id: 'juridique', nom: 'Правова робота', icon: '⚖️',
+    keywords: ['суд','позов','юридичн','правов','рішенн','виконавч','стягненн','арешт','запит','справа'] },
+  { id: 'personnel', nom: 'Персонал та HR', icon: '👥',
+    keywords: ['персонал','штат','працівник','посад','зарплат','вакансі','прийом','звільнен','чисельн','структур'] },
+  { id: 'performance', nom: 'Результативність', icon: '📊',
+    keywords: ['результат','показник','ефективн','виконанн','індикатор','метрик','KPI','оцінк','продуктивн'] },
+  { id: 'rapports', nom: 'Звітність', icon: '📄',
+    keywords: ['звіт','додаток','форма','таблиц','довідк','пояснювальн','аналіз','зведен'] },
+  { id: 'international', nom: 'Міжнародна співпраця', icon: '🌍',
+    keywords: ['міжнародн','європ','eu','usaid','партнер','проект','грант','допомог','іноземн'] },
+  { id: 'autres', nom: 'Інше', icon: '📁', keywords: [] }
+];
+
+const PALETTE = ['#0057B7','#FFD700','#18753c','#c8102e','#a855f7','#3b82f6','#ff6b00','#00e5ff','#0a6fd8','#f472b6','#fbbf24','#38bdf8'];
+const CHART_OPTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { font: { size: 10 }, boxWidth: 10 } } },
+  scales: { x: { ticks: { font: { size: 10 }, maxRotation: 45 } }, y: { ticks: { font: { size: 10 } } } }
+};
+
+// ====================================================================
+// ÉTAT
+// ====================================================================
+const state = {
+  datasets: [], filtered: [], currentPage: 1, pageSize: 25, totalResults: 0,
+  activeCategorie: null, selectedDataset: null, currentView: 'results',
+  expertiseCache: new Map(), charts: [], alerts: [], piiFindings: [],
+  history: [], surveillanceRunning: false, compareWith: null,
+  currentPageItems: []
+};
+
+// ====================================================================
+// HELPERS
+// ====================================================================
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function getTitle(d){ return d.titre || d.title || d.name || '(без назви)'; }
+function getOrg(d){
+  if (d.organisation) return d.organisation;
+  if (d.organization && d.organization.name) return d.organization.name;
+  return '';
+}
+function getResources(d){ return Array.isArray(d.resources) ? d.resources : []; }
+function getTags(d){
+  if (Array.isArray(d.tags)) return d.tags;
+  if (typeof d.tags === 'string') return d.tags.split(',').map(t => t.trim()).filter(Boolean);
+  return [];
+}
+function getPopularity(d){
+  if (typeof d.popularity === 'number') return d.popularity;
+  if (d.metrics && typeof d.metrics.views === 'number') return d.metrics.views;
+  return 0;
+}
+function formatDate(iso){
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('uk-UA',{day:'2-digit',month:'short',year:'numeric'}); }
+  catch(e){ return iso; }
+}
+function formatBytes(n){
+  if (n === null || n === undefined) return '—';
+  if (n < 1024) return n + ' Б';
+  if (n < 1024*1024) return (n/1024).toFixed(1) + ' КБ';
+  if (n < 1024*1024*1024) return (n/1024/1024).toFixed(1) + ' МБ';
+  return (n/1024/1024/1024).toFixed(2) + ' ГБ';
+}
+function formatNumber(n){
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString('uk-UA', { maximumFractionDigits: 2 });
+}
+function daysSince(iso){
+  if (!iso) return Infinity;
+  return (Date.now() - new Date(iso).getTime()) / 86400000;
+}
+function classifyDataset(d){
+  const haystack = [getTitle(d), d.description||'', getTags(d).join(' ')].join(' ').toLowerCase();
+  let bestCat = 'autres', bestScore = 0;
+  for (const cat of CATEGORIES){
+    if (cat.id === 'autres') continue;
+    let score = 0;
+    for (const kw of cat.keywords){
+      if (haystack.includes(kw.toLowerCase()))
+        score += getTitle(d).toLowerCase().includes(kw.toLowerCase()) ? 3 : 1;
+    }
+    if (score > bestScore){ bestScore = score; bestCat = cat.id; }
+  }
+  return bestCat;
+}
+function getCategoryCounts(list){
+  const counts = {};
+  CATEGORIES.forEach(c => counts[c.id] = 0);
+  list.forEach(d => { counts[classifyDataset(d)]++; });
+  return counts;
+}
+function normalizeFormat(r){
+  const candidates = [r.format, r.filetype, r.mime, r.title, r.url].filter(Boolean);
+  for (const c of candidates){
+    const f = String(c).toLowerCase();
+    if (f.includes('csv')) return 'csv';
+    if (f.includes('json')) return 'json';
+    if (f.includes('xls')) return 'xlsx';
+    if (f.includes('excel')) return 'xlsx';
+  }
+  if (r.url){
+    const url = r.url.toLowerCase();
+    if (url.endsWith('.csv') || url.includes('format=csv')) return 'csv';
+    if (url.endsWith('.json') || url.includes('format=json')) return 'json';
+    if (url.endsWith('.xls') || url.endsWith('.xlsx')) return 'xlsx';
+  }
+  return 'other';
+}
+function formatIcon(f){
+  if (f === 'csv') return { cls: 'csv', label: 'CSV', icon: '📊' };
+  if (f === 'json') return { cls: 'json', label: 'JSON', icon: '🔷' };
+  if (f === 'xlsx') return { cls: 'xlsx', label: 'XLSX', icon: '📗' };
+  return { cls: 'other', label: 'ІНШЕ', icon: '📎' };
+}
+function proxyUrl(url){
+  if (!url) return url;
+  if (url.startsWith('https://data.europa.eu') || url.startsWith('https://data.gov.ua')){
+    return `/proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
+// ====================================================================
+// TOASTS
+// ====================================================================
+function showToast(msg, type = 'info'){
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 2500);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ====================================================================
+// CHARGEMENT
+// ====================================================================
+async function loadData(){
+  const dot = document.getElementById('statusDot');
+  try {
+    const r = await fetch('arma.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const json = await r.json();
+    const results = json.results || json.result?.results || json;
+    if (!Array.isArray(results)) throw new Error('Формат невірний.');
+
+    state.datasets = results;
+    dot.classList.add('ready');
+
+    let totalRes = 0;
+    const formats = { csv: 0, json: 0, xlsx: 0, other: 0 };
+    state.datasets.forEach(d => {
+      getResources(d).forEach(r => { totalRes++; formats[normalizeFormat(r)]++; });
+    });
+
+    document.getElementById('tbStatus').textContent = 'OK';
+    document.getElementById('tbStatus').className = 'val green';
+    document.getElementById('tbRes').textContent = totalRes;
+    document.getElementById('tbCount').textContent = state.datasets.length;
+    document.getElementById('ivTotal').textContent = state.datasets.length;
+    document.getElementById('ivRes').textContent = totalRes;
+    document.getElementById('ivFormats').textContent = `${formats.csv} CSV · ${formats.json} JSON · ${formats.xlsx} XLSX`;
+
+    const score = computeGlobalScore();
+    document.getElementById('ivScore').textContent = score + ' / 100';
+    document.getElementById('ivScore').className = 'v ' + (score >= 70 ? 'green' : score >= 50 ? 'amber' : 'red');
+
+    renderCategories();
+    runSearch(1);
+  } catch(err){
+    dot.classList.add('offline');
+    document.getElementById('tbStatus').textContent = 'ПОМИЛКА';
+    document.getElementById('tbStatus').className = 'val red';
+    document.getElementById('resultsArea').innerHTML = `
+      <div class="error-box">
+        <strong>❌ Не вдалося завантажити arma.json</strong><br>
+        ${escapeHtml(err.message)}<br><br>
+        Запустіть через <code>python -m http.server</code> або Node proxy.
+      </div>
+    `;
+  }
+}
+
+function computeGlobalScore(){
+  if (!state.datasets.length) return 0;
+  let total = 0;
+  state.datasets.forEach(d => { total += datasetScore(d); });
+  return Math.round(total / state.datasets.length);
+}
+function datasetScore(d){
+  let score = 0;
+  if (getTitle(d) && getTitle(d).length >= 10) score += 20;
+  if (d.description && d.description.length >= 100) score += 25;
+  else if (d.description && d.description.length >= 30) score += 12;
+  if (getOrg(d)) score += 10;
+  if (d.url && d.url.startsWith('https://')) score += 5;
+  if (getTags(d).length >= 3) score += 15;
+  else if (getTags(d).length >= 1) score += 7;
+  if (d.last_update && daysSince(d.last_update) < 365) score += 15;
+  else if (d.last_update && daysSince(d.last_update) < 1825) score += 7;
+  if (getResources(d).length > 0) score += 10;
+  return score;
+}
+
+// ====================================================================
+// SIDEBAR
+// ====================================================================
+function renderCategories(){
+  const list = document.getElementById('sbList');
+  const search = document.getElementById('sourceSearch').value.toLowerCase();
+  const counts = getCategoryCounts(state.datasets);
+  const items = CATEGORIES.map(c => ({...c, count: counts[c.id] || 0}))
+    .filter(c => c.count > 0 && (c.nom.toLowerCase().includes(search) || c.id.includes(search)));
+
+  document.getElementById('sbCount').textContent = `${CATEGORIES.length} категорій · ${items.length} показано`;
+  list.innerHTML = items.map(c => `
+    <div class="source-item ${state.activeCategorie === c.id ? 'active' : ''}" data-cat="${c.id}">
+      <div class="source-item-h">
+        <span class="source-item-icon">${c.icon}</span>
+        <span class="source-item-name">${escapeHtml(c.nom)}</span>
+      </div>
+      <div class="source-item-meta">
+        <span class="source-item-count">${c.count} набор${c.count > 1 ? 'ів' : ''}</span>
+        <span>${state.activeCategorie === c.id ? '● АКТИВНА' : 'Клік'}</span>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.source-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.cat;
+      state.activeCategorie = (state.activeCategorie === id) ? null : id;
+      renderCategories();
+      runSearch(1);
+    });
+  });
+}
+
+// ====================================================================
+// RECHERCHE
+// ====================================================================
+function runSearch(page = 1){
+  const q = document.getElementById('queryInput').value.trim();
+  const sort = document.getElementById('sortSelect').value;
+  state.currentPage = page;
+  let list = state.datasets;
+
+  if (q){
+    const ql = q.toLowerCase();
+    list = list.filter(d =>
+      getTitle(d).toLowerCase().includes(ql) ||
+      (d.description||'').toLowerCase().includes(ql) ||
+      getTags(d).join(' ').toLowerCase().includes(ql) ||
+      getOrg(d).toLowerCase().includes(ql)
+    );
+  }
+  if (state.activeCategorie){
+    list = list.filter(d => classifyDataset(d) === state.activeCategorie);
+  }
+
+  if (sort === 'resources') list = [...list].sort((a,b) => getResources(b).length - getResources(a).length);
+  else if (sort === 'popularity') list = [...list].sort((a,b) => getPopularity(b) - getPopularity(a));
+  else if (sort === 'recent') list = [...list].sort((a,b) => new Date(b.last_update||0) - new Date(a.last_update||0));
+  else if (sort === 'title') list = [...list].sort((a,b) => getTitle(a).localeCompare(getTitle(b), 'uk'));
+
+  state.totalResults = list.length;
+  state.filtered = list;
+  const totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
+  const current = Math.min(Math.max(1, page), totalPages);
+  state.currentPage = current;
+  const startIdx = (current - 1) * state.pageSize;
+  const pageItems = list.slice(startIdx, startIdx + state.pageSize);
+  state.currentPageItems = pageItems;
+
+  document.getElementById('tbCount').textContent = state.totalResults;
+
+  if (state.currentView === 'results') renderResults(pageItems);
+  else if (state.currentView === 'expert') renderExpertiseView();
+  else if (state.currentView === 'alerts') renderAlertsView();
+  else if (state.currentView === 'pii') renderPIIView();
+  updatePaginationUI(totalPages, current);
+  document.getElementById('resultsArea').scrollTop = 0;
+}
+
+function showResults(html){ document.getElementById('resultsArea').innerHTML = html; }
+
+function renderResults(items){
+  if (!items.length){ showResults('<div class="empty">Нічого не знайдено.</div>'); return; }
+  const html = items.map(item => {
+    const catId = classifyDataset(item);
+    const catObj = CATEGORIES.find(c => c.id === catId) || CATEGORIES[CATEGORIES.length-1];
+    const resources = getResources(item);
+    const fmtCounts = { csv: 0, json: 0, xlsx: 0, other: 0 };
+    resources.forEach(r => fmtCounts[normalizeFormat(r)]++);
+    const fmtBadges = Object.entries(fmtCounts).filter(([k,v]) => v > 0)
+      .map(([k,v]) => { const ic = formatIcon(k); return `<span class="rc-badge ${ic.cls}">${ic.label}·${v}</span>`; }).join('');
+    const pop = getPopularity(item);
+    const score = datasetScore(item);
+    const scoreCls = score >= 70 ? 'csv' : score >= 40 ? 'xlsx' : 'alert';
+
+    return `
+      <div class="result-card ${state.selectedDataset?.id === item.id ? 'selected' : ''}" data-id="${escapeHtml(item.id)}">
+        <div class="rc-head">
+          <div class="rc-title">${escapeHtml(getTitle(item))}</div>
+          <div class="rc-badges">
+            <span class="rc-badge ${scoreCls}">📐 ${score}/100</span>
+            <span class="rc-badge cat">${catObj.icon} ${escapeHtml(catObj.nom)}</span>
+            ${pop ? `<span class="rc-badge pop">★ ${pop.toLocaleString('uk-UA')}</span>` : ''}
+            ${fmtBadges}
+          </div>
+        </div>
+        ${getOrg(item) ? `<div class="rc-org">🏛️ ${escapeHtml(getOrg(item))}</div>` : ''}
+        ${item.description ? `<div class="rc-desc">${escapeHtml(item.description.slice(0, 250))}${item.description.length > 250 ? '…' : ''}</div>` : ''}
+        <div class="rc-meta">
+          <span class="tag">📅 ${formatDate(item.last_update)}</span>
+          <span class="tag">📎 ${resources.length} ресурс${resources.length > 1 ? 'ів' : ''}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  showResults(html);
+
+  document.querySelectorAll('.result-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const d = state.datasets.find(x => x.id === card.dataset.id);
+      if (d) selectDataset(d);
+    });
+  });
+}
+
+function selectDataset(d){
+  state.selectedDataset = d;
+  state.currentView = 'expert';
+  document.querySelectorAll('.view-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.view === 'expert');
+  });
+  renderExpertiseView();
+  runSearch(state.currentPage);
+}
+
+// ====================================================================
+// VUE EXPERTISE
+// ====================================================================
+function destroyCharts(){
+  state.charts.forEach(c => { try { c.destroy(); } catch(e){} });
+  state.charts = [];
+}
+
+function renderExpertiseView(){
+  destroyCharts();
+  if (!state.selectedDataset){
+    showResults(`
+      <div class="expert-zone">
+        <div class="expert-header">
+          <h2>🔬 Повна експертиза</h2>
+          <div class="sub">Виберіть набір для аналізу структури та ресурсів.</div>
+        </div>
+      </div>
+    `);
+    return;
+  }
+
+  const d = state.selectedDataset;
+  const resources = getResources(d);
+  const datasetId = d.id || '';
+
+  const header = `
+    <div class="expert-header">
+      <h2>🔬 ${escapeHtml(getTitle(d))}</h2>
+      <div class="sub">
+        🏛️ ${escapeHtml(getOrg(d) || '—')} · 📎 ${resources.length} ресурс${resources.length > 1 ? 'ів' : ''}
+        · 📅 ${formatDate(d.last_update)} · <code>${escapeHtml(datasetId)}</code>
+      </div>
+    </div>
+  `;
+
+  const metaAnalysis = analyzeMetadata(d);
+  const compareHtml = state.compareWith ? renderCompare(d, state.compareWith) : '';
+
+  let resourcesHtml = '';
+  if (!resources.length){
+    resourcesHtml = `
+      <div class="analysis-section">
+        <h3><span>📎 Ресурси</span></h3>
+        <div style="text-align:center;padding:20px;color:var(--grey-500);font-size:12px">
+          До цього набору не прикріплено жодного ресурсу.
+        </div>
+      </div>
+    `;
+  } else {
+    resourcesHtml = resources.map((r, idx) => {
+      const fmt = normalizeFormat(r);
+      const ic = formatIcon(fmt);
+      const resKey = `${datasetId}::${idx}`;
+      const analyzed = state.expertiseCache.get(resKey);
+      const statusHtml = analyzed
+        ? (analyzed.error ? `<span class="status err">❌ Помилка</span>` : `<span class="status ok">✅ Проаналізовано</span>`)
+        : `<span class="status loading">⏳ Не проаналізовано</span>`;
+      const resName = r.title || r.name || `Ресурс ${idx + 1}`;
+
+      return `
+        <div class="res-card" data-res-key="${escapeHtml(resKey)}">
+          <div class="res-head">
+            <div class="fmt-icon ${ic.cls}">${ic.icon}</div>
+            <div class="info">
+              <div class="name">${escapeHtml(resName)}</div>
+              <div class="url">${escapeHtml(r.url || '—')}</div>
+            </div>
+            <div class="res-actions">
+              ${statusHtml}
+              <button class="btn-sm primary" data-res-key="${escapeHtml(resKey)}" data-res-idx="${idx}">🔬 Експертиза</button>
+            </div>
+          </div>
+          <div class="res-body" id="res-body-${escapeHtml(resKey).replace(/[^a-zA-Z0-9]/g,'_')}">
+            ${analyzed ? renderAnalysis(analyzed, r) : `
+              <div style="text-align:center;padding:20px;color:var(--grey-500);font-size:12px">
+                Натисніть <strong>Експертиза</strong> для аналізу цього ресурсу ${ic.label}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const globalActions = `
+    <div class="global-actions">
+      <button class="action-btn primary" id="exportPDFBtn">📄 Експорт PDF</button>
+      <button class="action-btn" id="compareBtn">🔀 Порівняти</button>
+      <button class="action-btn" id="btnMarkForSurveillance">🚨 Моніторити</button>
+    </div>
+  `;
+
+  showResults(header + globalActions + metaAnalysis + compareHtml + resourcesHtml);
+
+  setTimeout(() => initChartsForAnalyzed(resources, datasetId), 100);
+
+  document.querySelectorAll('[data-res-key].btn-sm').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const resKey = btn.dataset.resKey;
+      const idx = parseInt(btn.dataset.resIdx);
+      const res = resources[idx];
+      if (!res) return;
+      btn.disabled = true;
+      btn.textContent = '⏳ Аналіз…';
+      const analyzed = await analyzeResource(res, resKey);
+      btn.disabled = false;
+      btn.textContent = '🔄 Повторно';
+      const bodyId = `res-body-${resKey.replace(/[^a-zA-Z0-9]/g,'_')}`;
+      const body = document.getElementById(bodyId);
+      if (body){
+        body.innerHTML = renderAnalysis(analyzed, res);
+        setTimeout(() => initChartsForResource(resKey, analyzed), 50);
+      }
+      const status = btn.closest('.res-head').querySelector('.status');
+      if (status){
+        status.className = 'status ' + (analyzed.error ? 'err' : 'ok');
+        status.textContent = analyzed.error ? '❌ Помилка' : '✅ Проаналізовано';
+      }
+      updateCacheInfo();
+    });
+  });
+
+  document.getElementById('exportPDFBtn').addEventListener('click', () => exportDatasetPDF(d));
+  document.getElementById('compareBtn').addEventListener('click', () => openCompareModal(d));
+  document.getElementById('btnMarkForSurveillance').addEventListener('click', () => {
+    if (!state.surveillanceList) state.surveillanceList = new Set();
+    state.surveillanceList.add(d.id);
+    showToast(`📌 ${getTitle(d).slice(0, 40)}… додано до моніторингу`, 'success');
+  });
+}
+
+function analyzeMetadata(d){
+  const score = datasetScore(d);
+  const insights = [];
+
+  const titleLen = getTitle(d).length;
+  if (titleLen < 10) insights.push({ level: 'warn', ico: '📝', txt: `Дуже коротка назва (${titleLen} симв.)` });
+  else if (titleLen > 150) insights.push({ level: 'info', ico: '📝', txt: `Довга назва (${titleLen} симв.)` });
+  else insights.push({ level: 'ok', ico: '✅', txt: `Назва нормальної довжини (${titleLen} симв.)` });
+
+  const descLen = (d.description || '').length;
+  if (descLen === 0) insights.push({ level: 'err', ico: '❌', txt: 'Опис відсутній' });
+  else if (descLen < 50) insights.push({ level: 'warn', ico: '⚠️', txt: `Короткий опис (${descLen} симв.)` });
+  else insights.push({ level: 'ok', ico: '✅', txt: `Повний опис (${descLen} симв.)` });
+
+  const tags = getTags(d);
+  if (tags.length === 0) insights.push({ level: 'warn', ico: '🏷️', txt: 'Немає тегів — знижена видимість' });
+  else if (tags.length < 3) insights.push({ level: 'info', ico: '🏷️', txt: `${tags.length} тег(ів)` });
+  else insights.push({ level: 'ok', ico: '🏷️', txt: `${tags.length} тегів` });
+
+  const age = daysSince(d.last_update);
+  if (age > 3650) insights.push({ level: 'err', ico: '⏳', txt: `Дуже старі дані (${Math.round(age/365)} р.)` });
+  else if (age > 1825) insights.push({ level: 'warn', ico: '⏳', txt: `Старі дані (${Math.round(age/365)} р.)` });
+  else if (age < 365) insights.push({ level: 'ok', ico: '🟢', txt: `Нещодавнє оновлення (${Math.round(age)} дн.)` });
+
+  if (!getResources(d).length) insights.push({ level: 'warn', ico: '📎', txt: 'Немає ресурсів — набір потенційно порожній' });
+  else insights.push({ level: 'ok', ico: '📎', txt: `${getResources(d).length} ресурс(ів)` });
+
+  const scoreCls = score >= 70 ? 'green' : score >= 40 ? 'amber' : 'red';
+
+  return `
+    <div class="analysis-section">
+      <h3><span>📐 Оцінка відповідності</span></h3>
+      <div class="stat-grid">
+        <div class="stat-box ${scoreCls === 'green' ? 'good' : scoreCls === 'amber' ? 'warn' : 'bad'}">
+          <div class="lbl">Загальна</div>
+          <div class="val">${score}/100</div>
+          <div class="unit">${score >= 70 ? 'Відповідає' : score >= 40 ? 'Частково' : 'Невідповідає'}</div>
+        </div>
+        <div class="stat-box"><div class="lbl">Назва</div><div class="val">${titleLen}</div><div class="unit">символів</div></div>
+        <div class="stat-box"><div class="lbl">Опис</div><div class="val">${descLen}</div><div class="unit">символів</div></div>
+        <div class="stat-box"><div class="lbl">Теги</div><div class="val">${tags.length}</div><div class="unit">ключових слів</div></div>
+        <div class="stat-box"><div class="lbl">Ресурси</div><div class="val">${getResources(d).length}</div><div class="unit">файлів</div></div>
+        <div class="stat-box"><div class="lbl">Вік</div><div class="val">${isFinite(age) ? Math.round(age/365*10)/10 : '—'}</div><div class="unit">років</div></div>
+      </div>
+      <div class="insight-list">
+        ${insights.map(i => `<div class="insight ${i.level}"><span class="ico">${i.ico}</span><span class="txt">${i.txt}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ====================================================================
+// ⭐ PARSER ARMA DÉDIÉ — Паспорт бюджетної програми
+// ====================================================================
+
+function isARMAPassport(rows){
+  if (!rows || rows.length < 20) return false;
+  const allText = rows.slice(0, 100).map(r => (r || []).join(' ')).join(' ').toLowerCase();
+  if (!allText.includes('паспорт') && !allText.includes('виконання паспорт')) return false;
+  const passportMarkers = [
+    // Version 2025 (.xlsx)
+    /цілі\s+державної\s+політики/i,
+    /мета\s+бюджетної\s+програми/i,
+    /завдання\s+бюджетної\s+програми/i,
+    /видатки.*напрями\s+використання/i,
+    // Version 2018-2024 (.xls Crystal Reports)
+    /стратегічні\s+цілі/i,
+    /видатки.*бюджетною\s+програмою/i,
+    /напрями\s+використання\s+бюджетних\s+коштів/i,
+    // Commun a tous
+    /результативні\s+показники\s+бюджетної\s+програми/i,
+    /головного\s+розпорядника/i,
+    /відповідального\s+виконавця/i,
+  ];
+  let found = 0;
+  const first200 = rows.slice(0, 200).map(r => (r || []).join(' ')).join(' ');
+  for (const re of passportMarkers){
+    if (re.test(first200)) found++;
+  }
+  return found >= 2;
+}
+
+function parseARMAPassport(rows){
+  const result = {
+    isPassport: true,
+    meta: { rozporiadnyk: null, vykonavets: null, programa: null, meta: null, tsili: [], zavdannia: [] },
+    budget: null,
+    indicators: { zatrat: [], produktu: [], efektyvnosti: [], yakosti: [] },
+    rawSections: [],
+  };
+
+  const sections = [];
+  const seenNums = new Set();
+  const MAX_SCAN = Math.min(rows.length, 250);
+  for (let i = 0; i < MAX_SCAN; i++){
+    const row = rows[i];
+    if (!row) continue;
+    for (let j = 0; j < Math.min(row.length, 3); j++){
+      const v = String(row[j] || '').trim();
+      let num = null, label = '';
+      const m1 = v.match(/^(\d{1,2})\.\s+([А-ЯІЇЄҐA-Zа-яіїєґa-z].{3,})$/);
+      if (m1){ num = parseInt(m1[1]); label = m1[2].trim(); }
+      else {
+        const m2 = v.match(/^(\d{1,2})\.$/);
+        if (m2){
+          num = parseInt(m2[1]);
+          for (let k = j + 1; k < row.length; k++){
+            const cellText = String(row[k] || '').trim();
+            if (/^\d+$/.test(cellText)) continue;
+            if (cellText.length >= 4){ label = cellText; break; }
+          }
+        }
+      }
+      if (num === null) continue;
+      if (seenNums.has(num)) break;
+      if (num > 10) break;
+      if (num >= 4 && /тис\.\s*гривень|одиниць|відсотків|осіб|кв\.\s*метр|гривень\s+Управлінський/i.test(label)) break;
+      if (/^(Відхилення|Впродовж|Пояснення|У зв'язку|Розбіжність|На виконання)/i.test(label)) break;
+      seenNums.add(num);
+      sections.push({ num, label, lineIdx: i, cells: row });
+      break;
+    }
+  }
+  result.rawSections = sections.map(s => ({ num: s.num, label: s.label.slice(0, 60), line: s.lineIdx + 1 }));
+
+  for (const s of sections){
+    if (s.num === 1){
+      const cells = s.cells.filter(c => c !== '' && c != null);
+      if (cells.length >= 3) result.meta.rozporiadnyk = { code: String(cells[1]).trim(), name: String(cells[2]).trim() };
+    }
+    if (s.num === 2){
+      const cells = s.cells.filter(c => c !== '' && c != null);
+      if (cells.length >= 3) result.meta.vykonavets = { code: String(cells[1]).trim(), name: String(cells[2]).trim() };
+    }
+    if (s.num === 3){
+      const cells = s.cells.filter(c => c !== '' && c != null);
+      if (cells.length >= 4) result.meta.programa = {
+        kpkvk: String(cells[1]).trim(),
+        kfkvk: String(cells[2]).trim(),
+        name: String(cells[3]).trim(),
+      };
+      else if (cells.length >= 3) result.meta.programa = {
+        kpkvk: String(cells[1]).trim(), kfkvk: null, name: String(cells[2]).trim(),
+      };
+    }
+  }
+
+  for (let i = 0; i < sections.length; i++){
+    const s = sections[i];
+    if (s.num === 4){
+      let j = s.lineIdx + 1;
+      while (j < rows.length && !/^\d+\s*$/.test(String((rows[j]||[])[0] || '').trim())) j++;
+      while (j < rows.length){
+        const v0 = String((rows[j]||[])[0] || '').trim();
+        const m = v0.match(/^(\d+)$/);
+        if (!m) break;
+        const text = (rows[j]||[]).slice(1).map(c => String(c || '').trim()).filter(Boolean).join(' ');
+        if (text) result.meta.tsili.push({ n: parseInt(m[1]), text });
+        j++;
+      }
+    }
+    if (s.num === 5){
+      let j = s.lineIdx + 1;
+      while (j < rows.length){
+        const text = (rows[j]||[]).map(c => String(c || '').trim()).filter(Boolean).join(' ');
+        if (text.length >= 20){ result.meta.meta = text; break; }
+        j++;
+        if (j > s.lineIdx + 5) break;
+      }
+    }
+    if (s.num === 6){
+      let j = s.lineIdx + 1;
+      while (j < rows.length && !/^\d+$/.test(String((rows[j]||[])[0] || '').trim())) j++;
+      while (j < rows.length){
+        const v0 = String((rows[j]||[])[0] || '').trim();
+        const m = v0.match(/^(\d+)$/);
+        if (!m) break;
+        const text = (rows[j]||[]).slice(1).map(c => String(c || '').trim()).filter(Boolean).join(' ');
+        if (text) result.meta.zavdannia.push({ n: parseInt(m[1]), text });
+        j++;
+      }
+    }
+  }
+
+  const sec7 = sections.find(s => s.num === 7);
+  if (sec7) result.budget = parseBudgetSection(rows, sec7.lineIdx);
+
+  // Cherche la section indicateurs par libelle (le numero varie : 8 en 2018, 9 en 2025)
+  let secInd = sections.find(s => /результативні\s+показники/i.test(s.label));
+  if (!secInd){
+    // Fallback : scanner les 300 premieres lignes pour trouver le libelle
+    for (let i = 0; i < Math.min(rows.length, 300); i++){
+      const rowText = (rows[i] || []).map(c => String(c || '')).join(' ');
+      if (/результативні\s+показники\s+бюджетної/i.test(rowText)){
+        secInd = { num: 0, label: '', lineIdx: i, cells: rows[i] };
+        break;
+      }
+    }
+  }
+  if (secInd) parseIndicatorsSection(rows, secInd.lineIdx, result.indicators);
+
+  return result;
+}
+
+function parseBudgetSection(rows, startIdx){
+  const result = { total: null, rows: [], header: null };
+  let totalRow = null;
+  let dataStart = -1;
+
+  for (let i = startIdx; i < Math.min(startIdx + 30, rows.length); i++){
+    const row = rows[i];
+    if (!row) continue;
+    const c0 = String(row[0] || '').trim();
+
+    if (/^усього:?$/i.test(c0)) totalRow = row;
+
+    if (/^\d+$/.test(c0) && dataStart === -1 && i > startIdx + 5){
+      dataStart = i;
+      for (let j = i; j < rows.length; j++){
+        const r = rows[j];
+        if (!r) break;
+        const v0 = String(r[0] || '').trim();
+        if (v0 && !/^\d+$/.test(v0) && !/^усього:?$/i.test(v0)) break;
+        if (!v0) break;
+        const nums = r.slice(1).map(c => parseBudgetNumber(c)).filter(n => n !== null);
+        if (nums.length >= 4){
+          result.rows.push({
+            n: parseInt(v0) || null,
+            label: String(r[1] || '').trim(),
+            values: nums,
+          });
+        }
+      }
+      break;
+    }
+  }
+
+  if (totalRow){
+    const nums = totalRow.slice(1).map(c => parseBudgetNumber(c)).filter(n => n !== null);
+    if (nums.length >= 4){
+      const planRazom = nums[2] ?? nums[0];
+      const faktRazom = nums[5] ?? nums[3] ?? nums[0];
+      result.total = {
+        plan_zagal: nums[0] ?? 0,
+        plan_spec: nums[1] ?? 0,
+        plan_razom: planRazom,
+        fakt_zagal: nums[3] ?? 0,
+        fakt_spec: nums[4] ?? 0,
+        fakt_razom: faktRazom,
+        ecart: (faktRazom || 0) - (planRazom || 0),
+        taux: planRazom > 0 ? (faktRazom / planRazom) * 100 : 0,
+      };
+    }
+  }
+
+  return result;
+}
+
+function parseIndicatorsSection(rows, startIdx, indicators){
+  const groupMap = { 'затрат': 'zatrat', 'продукту': 'produktu', 'ефективності': 'efektyvnosti', 'якості': 'yakosti' };
+  let currentGroup = null;
+  const debugLines = [];
+
+  for (let i = startIdx; i < rows.length; i++){
+    const row = rows[i];
+    if (!row) continue;
+
+    // ⭐ NOUVELLE APPROCHE : extraire les cellules NON VIDES dans l'ordre
+    // (le fichier Crystal Reports a beaucoup de colonnes vides entre les valeurs)
+    const filled = [];
+    for (let j = 0; j < row.length; j++){
+      const v = String(row[j] || '').trim();
+      if (v !== '') filled.push({ col: j, val: v });
+    }
+
+    if (debugLines.length < 40){
+      const preview = filled.slice(0, 6).map(x => `c${x.col}=${x.val.slice(0, 20)}`).join(' | ');
+      debugLines.push(`[IND L${i+1}] ${preview}`);
+    }
+
+    if (filled.length === 0) continue;
+
+    // ⭐ Détection du groupe : cherche un mot-clé SEUL dans une cellule non vide
+    let matchedGroup = null;
+    for (const cell of filled){
+      const low = cell.val.toLowerCase();
+      for (const [kw, key] of Object.entries(groupMap)){
+        if (low === kw){ matchedGroup = key; break; }
+      }
+      if (matchedGroup) break;
+    }
+    if (matchedGroup){
+      currentGroup = matchedGroup;
+      debugLines.push(`  >>> GROUPE DETECTE : ${matchedGroup} (a L${i+1}, col=${filled[0].col})`);
+      continue;
+    }
+
+    // Fin de section : uniquement "10. Узагальнений висновок" OU "9. Видатки у розрізі"
+    const first = filled[0].val;
+    if (/^10\.\s+Узагальнений/i.test(first)) break;
+    if (/^9\.\s+Видатки\s+у\s+розрізі/i.test(first)) break;
+    if (/^Аналіз\s+стану/i.test(first)) break;
+
+    // ⭐ Ligne d'indicateur : trouver le N° dans les 3 premieres cellules
+    // Le numero peut etre en col 0 (2025), col 4 (2018), etc.
+    if (currentGroup){
+      // 1) Identifier le numero (1re cellule numerique courte <= 2 chiffres)
+      let numIdx = -1;
+      for (let k = 0; k < Math.min(filled.length, 4); k++){
+        if (/^\d{1,2}$/.test(filled[k].val)){ numIdx = k; break; }
+      }
+      if (numIdx === -1) continue;
+
+      // 2) Nom : 1re cellule texte apres le numero (longueur >= 4)
+      let name = '', unit = '', source = '';
+      let plan = null, fakt = null;
+      const cellsAfterNum = filled.slice(numIdx + 1);
+      // Le nom est la 1re cellule texte
+      for (const c of cellsAfterNum){
+        if (c.val.length >= 4 && !/^[\d\s.,-]+$/.test(c.val)){ name = c.val; break; }
+      }
+      if (!name || name.length < 4) continue;
+
+      // 3) Collecter tous les nombres de la ligne (pour plan/fakt)
+      const nums = [];
+      for (const c of filled){
+        const n = parseBudgetNumber(c.val);
+        if (n !== null && /^-?[\d\s.,]+$/.test(c.val.trim())) nums.push(n);
+      }
+      // Ignorer le 1er nombre (= numero d'indicateur)
+      const dataNums = nums.slice(1);
+      // Les 2 derniers nombres significatifs = plan, fakt
+      if (dataNums.length >= 2){
+        plan = dataNums[dataNums.length - 2];
+        fakt = dataNums[dataNums.length - 1];
+      } else if (dataNums.length === 1){
+        plan = dataNums[0];
+      }
+
+      // Unite : chercher une cellule courte apres le nom
+      const nameIdx = filled.findIndex(c => c.val === name);
+      for (let k = nameIdx + 1; k < filled.length; k++){
+        const v = filled[k].val;
+        if (/^(осіб|одиниць|од\.|тис|грн|відсотків|відс\.|кв\.|шт)/i.test(v)){ unit = v; break; }
+      }
+      // Source : 1re cellule apres unité avec mots-clés
+      for (let k = nameIdx + 1; k < filled.length; k++){
+        const v = filled[k].val;
+        if (/Договір|Управлінський|Постанова|Наказ|Розпорядження|облік/i.test(v)){ source = v.slice(0, 80); break; }
+      }
+
+      indicators[currentGroup].push({
+        n: parseInt(filled[numIdx].val),
+        name: name.slice(0, 200),
+        unit, source, plan, fakt,
+      });
+    }
+  }
+
+  console.log(`[parseIndicatorsSection] startIdx=${startIdx}`);
+  console.log(`[parseIndicatorsSection] resultats : zatrat=${indicators.zatrat.length}, produktu=${indicators.produktu.length}, efektyvnosti=${indicators.efektyvnosti.length}, yakosti=${indicators.yakosti.length}`);
+  console.log('--- DEBUG INDICATEURS (40 premieres lignes) ---');
+  debugLines.forEach(l => console.log(l));
+  console.log('--- FIN DEBUG ---');
+}
+
+function renderARMAPassport(p){
+  const fmtUAH = (n) => {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    const abs = Math.abs(n);
+    if (abs >= 1e9) return (n/1e9).toFixed(2) + ' млрд ₴';
+    if (abs >= 1e6) return (n/1e6).toFixed(2) + ' млн ₴';
+    if (abs >= 1e3) return n.toLocaleString('uk-UA', { maximumFractionDigits: 1 }) + ' тис ₴';
+    return n.toLocaleString('uk-UA', { maximumFractionDigits: 2 }) + ' ₴';
+  };
+
+  const metaHtml = `
+    <div class="analysis-section">
+      <h3><span>📋 Паспорт бюджетної програми</span></h3>
+      <div class="stat-grid">
+        ${p.meta.rozporiadnyk ? `
+          <div class="stat-box">
+            <div class="lbl">Головний розпорядник</div>
+            <div class="val" style="font-size:14px">${escapeHtml(p.meta.rozporiadnyk.code)}</div>
+            <div class="unit">${escapeHtml(p.meta.rozporiadnyk.name.slice(0, 60))}</div>
+          </div>` : ''}
+        ${p.meta.vykonavets ? `
+          <div class="stat-box">
+            <div class="lbl">Відповідальний виконавець</div>
+            <div class="val" style="font-size:14px">${escapeHtml(p.meta.vykonavets.code)}</div>
+            <div class="unit">${escapeHtml(p.meta.vykonavets.name.slice(0, 60))}</div>
+          </div>` : ''}
+        ${p.meta.programa ? `
+          <div class="stat-box">
+            <div class="lbl">Бюджетна програма</div>
+            <div class="val" style="font-size:14px">${escapeHtml(p.meta.programa.kpkvk)}${p.meta.programa.kfkvk ? ' / ' + escapeHtml(p.meta.programa.kfkvk) : ''}</div>
+            <div class="unit">${escapeHtml(p.meta.programa.name.slice(0, 60))}</div>
+          </div>` : ''}
+      </div>
+      ${p.meta.meta ? `
+        <div style="margin-top:10px;padding:10px 12px;background:var(--grey-50);border-left:3px solid var(--ua-blue);border-radius:4px;font-size:12px;color:var(--grey-700)">
+          <strong>Мета:</strong> ${escapeHtml(p.meta.meta.slice(0, 400))}${p.meta.meta.length > 400 ? '…' : ''}
+        </div>` : ''}
+    </div>
+  `;
+
+  const tsiliZavdanniaHtml = (p.meta.tsili.length || p.meta.zavdannia.length) ? `
+    <div class="analysis-section">
+      <h3><span>🎯 Цілі та завдання</span></h3>
+      ${p.meta.tsili.length ? `
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--ua-blue);text-transform:uppercase;margin-bottom:6px">
+            Цілі державної політики (${p.meta.tsili.length})
+          </div>
+          <div class="insight-list">
+            ${p.meta.tsili.map(t => `<div class="insight info"><span class="ico">🎯</span><span class="txt"><strong>${t.n}.</strong> ${escapeHtml(t.text)}</span></div>`).join('')}
+          </div>
+        </div>` : ''}
+      ${p.meta.zavdannia.length ? `
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--ua-blue);text-transform:uppercase;margin-bottom:6px">
+            Завдання бюджетної програми (${p.meta.zavdannia.length})
+          </div>
+          <div class="insight-list">
+            ${p.meta.zavdannia.map(t => `<div class="insight info"><span class="ico">✅</span><span class="txt"><strong>${t.n}.</strong> ${escapeHtml(t.text)}</span></div>`).join('')}
+          </div>
+        </div>` : ''}
+    </div>
+  ` : '';
+
+  let budgetHtml = '';
+  if (p.budget && p.budget.total){
+    const t = p.budget.total;
+    const tauxCls = t.taux >= 95 && t.taux <= 105 ? 'good' : (t.taux >= 80 ? 'warn' : 'bad');
+    const tauxLabel = t.taux >= 100 ? 'Перевищення' : 'Недовиконання';
+    const rowsHtml = p.budget.rows.length ? `
+      <div style="overflow-x:auto;max-height:300px;border:1px solid var(--grey-200);border-radius:4px;margin-top:10px">
+        <table class="stats-table">
+          <thead><tr>
+            <th>№</th><th>Напрями використання бюджетних коштів</th>
+            <th>План (заг.)</th><th>Факт (заг.)</th><th>Відхилення</th>
+          </tr></thead>
+          <tbody>
+            ${p.budget.rows.map(r => {
+              const plan = r.values[0] ?? 0;
+              const fakt = r.values[3] ?? r.values[0] ?? 0;
+              const ecart = fakt - plan;
+              return `
+                <tr>
+                  <td class="col-name">${r.n ?? ''}</td>
+                  <td>${escapeHtml((r.label || '').slice(0, 60))}</td>
+                  <td>${fmtUAH(plan)}</td>
+                  <td>${fmtUAH(fakt)}</td>
+                  <td style="color:${ecart < 0 ? 'var(--red)' : 'var(--green)'}">
+                    ${ecart > 0 ? '+' : ''}${fmtUAH(ecart)}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : '';
+
+    budgetHtml = `
+      <div class="analysis-section">
+        <h3><span>💰 Видатки (надані кредити з бюджету) — розділ 7</span></h3>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="lbl">План (разом)</div><div class="val" style="font-size:15px">${fmtUAH(t.plan_razom)}</div></div>
+          <div class="stat-box"><div class="lbl">Факт (разом)</div><div class="val" style="font-size:15px">${fmtUAH(t.fakt_razom)}</div></div>
+          <div class="stat-box ${tauxCls}">
+            <div class="lbl">Виконання</div>
+            <div class="val">${t.taux.toFixed(1)}%</div>
+            <div class="unit">${tauxLabel}</div>
+          </div>
+          <div class="stat-box ${t.ecart < 0 ? 'warn' : 'good'}">
+            <div class="lbl">Відхилення</div>
+            <div class="val" style="font-size:15px">${t.ecart > 0 ? '+' : ''}${fmtUAH(t.ecart)}</div>
+          </div>
+        </div>
+        ${rowsHtml}
+      </div>
+    `;
+  }
+
+  const ind = p.indicators;
+  const totalInd = ind.zatrat.length + ind.produktu.length + ind.efektyvnosti.length + ind.yakosti.length;
+  let indicatorsHtml = '';
+  if (totalInd > 0){
+    const groups = [
+      { key: 'zatrat', label: '📥 Затрат', color: '#0057B7' },
+      { key: 'produktu', label: '📤 Продукту', color: '#18753c' },
+      { key: 'efektyvnosti', label: '⚙️ Ефективності', color: '#FFD700' },
+      { key: 'yakosti', label: '⭐ Якості', color: '#c8102e' },
+    ];
+
+    const groupsHtml = groups.map(g => {
+      const arr = ind[g.key];
+      if (!arr.length) return '';
+      return `
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;color:${g.color};text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid ${g.color}">
+            ${g.label} (${arr.length})
+          </div>
+          <div style="overflow-x:auto;max-height:300px;border:1px solid var(--grey-200);border-radius:4px">
+            <table class="stats-table">
+              <thead><tr>
+                <th>№</th><th>Показник</th><th>Од.</th>
+                <th>План</th><th>Факт</th><th>Вик. %</th>
+              </tr></thead>
+              <tbody>
+                ${arr.map(x => {
+                  const taux = (x.plan && x.fakt !== null) ? (x.fakt / x.plan) * 100 : null;
+                  const tauxCls = taux === null ? '' : (taux >= 90 && taux <= 110 ? 'green' : (taux >= 60 ? 'amber' : 'red'));
+                  const color = tauxCls === 'green' ? 'var(--green)' : tauxCls === 'amber' ? 'var(--amber)' : tauxCls === 'red' ? 'var(--red)' : 'var(--grey-500)';
+                  return `
+                    <tr>
+                      <td class="col-name">${x.n}</td>
+                      <td>${escapeHtml(x.name.slice(0, 90))}${x.name.length > 90 ? '…' : ''}</td>
+                      <td>${escapeHtml(x.unit)}</td>
+                      <td>${x.plan !== null ? formatNumber(x.plan) : '—'}</td>
+                      <td>${x.fakt !== null ? formatNumber(x.fakt) : '—'}</td>
+                      <td style="color:${color};font-weight:700">${taux !== null ? taux.toFixed(1) + '%' : '—'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    indicatorsHtml = `
+      <div class="analysis-section">
+        <h3><span>📈 Результативні показники — розділ 9 (${totalInd})</span></h3>
+        ${groupsHtml}
+      </div>
+    `;
+  }
+
+  const debugHtml = `
+    <div class="analysis-section">
+      <h3><span>🔍 Sections détectées</span></h3>
+      <div class="insight-list">
+        ${p.rawSections.map(s => `<div class="insight info"><span class="ico">§</span><span class="txt">L${s.line} — <strong>${s.num}.</strong> ${escapeHtml(s.label)}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  return `
+    <div class="insight ok" style="margin-bottom:14px">
+      <span class="ico">🎯</span>
+      <span class="txt"><strong>Structure détectée : паспорт бюджетної програми</strong> — parser ARMA dédié activé (sections 1-10)</span>
+    </div>
+    ${metaHtml}
+    ${tsiliZavdanniaHtml}
+    ${budgetHtml}
+    ${indicatorsHtml}
+    ${debugHtml}
+  `;
+}
+
+// ====================================================================
+// ANALYSE DE RESSOURCE
+// ====================================================================
+async function analyzeResource(res, resKey){
+  if (state.expertiseCache.has(resKey)) return state.expertiseCache.get(resKey);
+  const fmt = normalizeFormat(res);
+  const result = {
+    id: resKey, title: res.title || res.name, format: fmt, url: res.url,
+    error: null, stats: {}, preview: null, columns: [], types: {},
+    columnStats: {}, duplicates: { count: 0, examples: [] },
+    outliers: [], correlations: [], insights: [], pii: [], armaBudget: null,
+    isARMAPassport: false, armaPassport: null
+  };
+
+  if (!res.url){
+    result.error = 'Ресурс не має URL.';
+    state.expertiseCache.set(resKey, result);
+    return result;
+  }
+
+  try {
+    const fetchUrl = proxyUrl(res.url);
+    const response = await fetch(fetchUrl, { mode: 'cors' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const arrayBuffer = await response.arrayBuffer();
+    result.stats.size = arrayBuffer.byteLength;
+
+    if (fmt === 'csv'){
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
+      parseCSV(text, result);
+    } else if (fmt === 'json'){
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
+      parseJSON(text, result);
+    } else if (fmt === 'xlsx'){
+      parseXLSX(arrayBuffer, result);
+    } else {
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer.slice(0, 300));
+      if (text.trim().startsWith('{') || text.trim().startsWith('[')){
+        parseJSON(new TextDecoder().decode(arrayBuffer), result);
+      } else if (text.includes(',') || text.includes(';')){
+        parseCSV(new TextDecoder().decode(arrayBuffer), result);
+      } else result.error = 'Формат не підтримується';
+    }
+
+    if (!result.error){
+      // ⭐ Détection ARMA паспорт AVANT le parser générique
+      const rowsForDetection = result.rows || [];
+      if (rowsForDetection.length && isARMAPassport(rowsForDetection)){
+        result.armaPassport = parseARMAPassport(rowsForDetection);
+        result.isARMAPassport = true;
+      } else {
+        // Parser générique (tableau classique)
+        computeColumnStats(result);
+        detectDuplicates(result);
+        detectOutliers(result);
+        computeCorrelations(result);
+        generateInsights(result);
+        detectPII(result);
+        result.armaBudget = analyzeARMA_Budget(result);
+      }
+    }
+  } catch(err){
+    result.error = err.message;
+  }
+
+  state.expertiseCache.set(resKey, result);
+  return result;
+}
+
+function parseCSV(text, result){
+  const firstLine = text.split('\n')[0];
+  const sep = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+  result.stats.separator = sep;
+  const lines = text.split(/\r?\n/).filter(l => l.length > 0);
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
+  const rows = lines.slice(1).map(l => l.split(sep).map(c => c.trim().replace(/^"|"$/g, '')));
+  result.stats.rows = rows.length;
+  result.stats.columns = headers.length;
+  result.columns = headers;
+  result.preview = rows.slice(0, 10);
+  result.rows = rows;
+  const types = {};
+  headers.forEach((h, i) => {
+    const values = rows.map(r => r[i]).filter(v => v !== undefined && v !== '');
+    types[h] = detectType(values);
+  });
+  result.types = types;
+}
+
+function parseJSON(text, result){
+  let data;
+  try { data = JSON.parse(text); } catch(e){ result.error = 'Невалідний JSON : ' + e.message; return; }
+  let array = null;
+  if (Array.isArray(data)) array = data;
+  else if (data && typeof data === 'object'){
+    for (const k of Object.keys(data)){ if (Array.isArray(data[k])){ array = data[k]; break; } }
+  }
+  if (!array){
+    result.stats.rows = 1;
+    result.stats.columns = Object.keys(data || {}).length;
+    result.columns = Object.keys(data || {});
+    result.preview = [Object.values(data || {})];
+    result.rows = result.preview;
+    return;
+  }
+  result.stats.rows = array.length;
+  const keys = array.length && typeof array[0] === 'object' && !Array.isArray(array[0])
+    ? Object.keys(array[0]) : ['value'];
+  result.stats.columns = keys.length;
+  result.columns = keys;
+  const rows = array.map(item => {
+    if (typeof item === 'object' && !Array.isArray(item)) return keys.map(k => item[k]);
+    return [item];
+  });
+  result.rows = rows;
+  result.preview = rows.slice(0, 10);
+  const types = {};
+  keys.forEach((k, i) => {
+    const values = rows.map(r => r[i]).filter(v => v !== undefined && v !== null && v !== '');
+    types[k] = detectType(values);
+  });
+  result.types = types;
+}
+
+function parseXLSX(arrayBuffer, result){
+  try {
+    const wb = XLSX.read(arrayBuffer, { type: 'array' });
+    const sheetName = wb.SheetNames[0];
+    result.stats.sheets = wb.SheetNames;
+    result.stats.activeSheet = sheetName;
+    const sheet = wb.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    if (!json.length){ result.error = 'Порожній аркуш'; return; }
+    const headers = json[0].map(h => String(h || ''));
+    const rows = json.slice(1);
+    result.stats.rows = rows.length;
+    result.stats.columns = headers.length;
+    result.columns = headers;
+    result.rows = rows;
+    result.preview = rows.slice(0, 10).map(r => headers.map((_, i) => r[i] ?? ''));
+    const types = {};
+    headers.forEach((h, i) => {
+      const values = rows.map(r => r[i]).filter(v => v !== undefined && v !== '');
+      types[h] = detectType(values);
+    });
+    result.types = types;
+  } catch(e){ result.error = 'Помилка XLSX : ' + e.message; }
+}
+
+function detectType(values){
+  if (!values.length) return 'empty';
+  const sample = values.slice(0, 30);
+  let num = 0, date = 0, bool = 0, n = 0;
+  for (const v of sample){
+    const s = String(v).trim();
+    if (s === '') continue;
+    n++;
+    if (!isNaN(Number(s.replace(',', '.')))) num++;
+    else if (/^\d{2}[\/\-.]\d{2}[\/\-.]\d{4}/.test(s) || /^\d{4}-\d{2}-\d{2}/.test(s)) date++;
+    else if (/^(true|false|так|ні|0|1)$/i.test(s)) bool++;
+  }
+  if (n === 0) return 'empty';
+  if (num/n > 0.8) return 'number';
+  if (date/n > 0.8) return 'date';
+  if (bool/n > 0.8) return 'boolean';
+  return 'string';
+}
+
+function computeColumnStats(result){
+  if (!result.rows || !result.columns) return;
+  const stats = {};
+  result.columns.forEach((col, i) => {
+    const values = result.rows.map(r => r[i]);
+    const nonEmpty = values.filter(v => v !== '' && v !== undefined && v !== null);
+    const type = result.types[col] || 'string';
+    const s = {
+      total: values.length, nonEmpty: nonEmpty.length, empty: values.length - nonEmpty.length,
+      emptyRatio: values.length ? (values.length - nonEmpty.length) / values.length : 0,
+      unique: new Set(nonEmpty.map(v => String(v))).size, type
+    };
+    s.uniqueRatio = nonEmpty.length ? s.unique / nonEmpty.length : 0;
+    if (type === 'number'){
+      const nums = nonEmpty.map(v => Number(String(v).replace(',', '.'))).filter(n => !isNaN(n));
+      if (nums.length){
+        const sorted = [...nums].sort((a,b) => a-b);
+        s.min = sorted[0]; s.max = sorted[sorted.length - 1];
+        s.sum = nums.reduce((a,b) => a+b, 0);
+        s.mean = s.sum / nums.length;
+        const mid = Math.floor(sorted.length / 2);
+        s.median = sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+        const variance = nums.reduce((a,b) => a + Math.pow(b - s.mean, 2), 0) / nums.length;
+        s.stddev = Math.sqrt(variance);
+        s.q1 = sorted[Math.floor(sorted.length * 0.25)];
+        s.q3 = sorted[Math.floor(sorted.length * 0.75)];
+        s.iqr = s.q3 - s.q1;
+      }
+    }
+    if (type === 'string'){
+      const freq = {};
+      nonEmpty.forEach(v => { const k = String(v); freq[k] = (freq[k] || 0) + 1; });
+      s.top = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0, 5);
+    }
+    stats[col] = s;
+  });
+  result.columnStats = stats;
+}
+
+function detectDuplicates(result){
+  if (!result.rows || !result.columns) return;
+  const seen = new Map();
+  const dups = [];
+  result.rows.forEach((row, idx) => {
+    const key = row.join('|');
+    if (seen.has(key)){
+      if (dups.length < 20) dups.push({ line: idx + 2, sample: row.slice(0, 3).join(', ') });
+    } else seen.set(key, idx);
+  });
+  result.duplicates = {
+    count: result.rows.length - seen.size,
+    total: result.rows.length,
+    ratio: result.rows.length ? (result.rows.length - seen.size) / result.rows.length : 0,
+    examples: dups
+  };
+}
+
+function detectOutliers(result){
+  const outliers = [];
+  result.columns.forEach((col, i) => {
+    const s = result.columnStats[col];
+    if (!s || s.type !== 'number' || !s.iqr) return;
+    const lowerBound = s.q1 - 1.5 * s.iqr;
+    const upperBound = s.q3 + 1.5 * s.iqr;
+    result.rows.forEach((row, idx) => {
+      const v = Number(String(row[i]).replace(',', '.'));
+      if (!isNaN(v) && (v < lowerBound || v > upperBound)){
+        if (outliers.length < 30){
+          outliers.push({
+            column: col, value: v, line: idx + 2,
+            context: `[${formatNumber(s.q1)} ; ${formatNumber(s.q3)}]`,
+            direction: v < lowerBound ? 'bas' : 'haut'
+          });
+        }
+      }
+    });
+  });
+  result.outliers = outliers;
+}
+
+function computeCorrelations(result){
+  const numCols = result.columns.filter(c => result.columnStats[c]?.type === 'number');
+  if (numCols.length < 2) return;
+  const corrs = [];
+  for (let i = 0; i < numCols.length; i++){
+    for (let j = i+1; j < numCols.length; j++){
+      const c1 = numCols[i], c2 = numCols[j];
+      const idx1 = result.columns.indexOf(c1), idx2 = result.columns.indexOf(c2);
+      const pairs = [];
+      result.rows.forEach(row => {
+        const v1 = Number(String(row[idx1]).replace(',', '.'));
+        const v2 = Number(String(row[idx2]).replace(',', '.'));
+        if (!isNaN(v1) && !isNaN(v2)) pairs.push([v1, v2]);
+      });
+      if (pairs.length < 5) continue;
+      const n = pairs.length;
+      const mean1 = pairs.reduce((a,[x]) => a+x, 0) / n;
+      const mean2 = pairs.reduce((a,[,y]) => a+y, 0) / n;
+      let num = 0, den1 = 0, den2 = 0;
+      pairs.forEach(([x, y]) => {
+        const dx = x - mean1, dy = y - mean2;
+        num += dx * dy; den1 += dx*dx; den2 += dy*dy;
+      });
+      const r = den1 && den2 ? num / Math.sqrt(den1 * den2) : 0;
+      if (Math.abs(r) > 0.5) corrs.push({ col1: c1, col2: c2, r });
+    }
+  }
+  corrs.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
+  result.correlations = corrs.slice(0, 10);
+}
+
+function generateInsights(result){
+  const insights = [];
+  const stats = result.columnStats;
+  if (result.duplicates.count > 0){
+    insights.push({
+      level: result.duplicates.ratio > 0.1 ? 'warn' : 'info',
+      ico: '🔁',
+      txt: `<strong>${result.duplicates.count} дублікатів</strong> (${(result.duplicates.ratio*100).toFixed(1)}%)`
+    });
+  } else insights.push({ level: 'ok', ico: '✅', txt: 'Дублікатів не виявлено' });
+  if (result.outliers.length) insights.push({ level: 'warn', ico: '📊', txt: `<strong>${result.outliers.length} аномальних значень</strong>` });
+  if (result.correlations.length){
+    const top = result.correlations[0];
+    insights.push({ level: 'info', ico: '🔗', txt: `Кореляція <strong>${escapeHtml(top.col1)}</strong> ↔ <strong>${escapeHtml(top.col2)}</strong> (r = ${top.r.toFixed(2)})` });
+  }
+  const emptyCols = Object.entries(stats).filter(([c, s]) => s.emptyRatio > 0.5);
+  if (emptyCols.length) insights.push({ level: 'warn', ico: '⚠️', txt: `<strong>${emptyCols.length} колонок</strong> порожні на >50%` });
+  const numCols = Object.entries(stats).filter(([c, s]) => s.type === 'number');
+  if (numCols.length) insights.push({ level: 'info', ico: '🔢', txt: `<strong>${numCols.length} числових колонок</strong>` });
+  const totalCells = Object.values(stats).reduce((a, s) => a + s.total, 0);
+  const emptyCells = Object.values(stats).reduce((a, s) => a + s.empty, 0);
+  const fillRate = totalCells ? 1 - emptyCells / totalCells : 0;
+  insights.push({
+    level: fillRate > 0.9 ? 'ok' : fillRate > 0.7 ? 'info' : 'warn',
+    ico: '💧',
+    txt: `Заповненість : <strong>${(fillRate * 100).toFixed(1)}%</strong>`
+  });
+  result.insights = insights;
+}
+
+// ====================================================================
+// DÉTECTION PII UKRAINIENNE
+// ====================================================================
+const PII_PATTERNS = [
+  { name: 'Email',              regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, critical: true },
+  { name: 'Телефон UA',         regex: /(?:\+380|0)\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}/g, critical: true },
+  { name: 'IBAN UA',            regex: /\bUA\d{2}\s?\d{6}\s?\d{19}\b/g, critical: true },
+  { name: 'ІПН (РНОКПП)',       regex: /\b\d{10}\b/g, critical: true },
+  { name: 'ЄДРПОУ',             regex: /\b\d{8}\b/g, critical: false },
+  { name: 'Дата народження',    regex: /\b(?:0[1-9]|[12]\d|3[01])[.\-\/](?:0[1-9]|1[0-2])[.\-\/](?:19|20)\d{2}\b/g, critical: false },
+  { name: 'IP адреса',          regex: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, critical: false },
+  { name: 'URL',                regex: /https?:\/\/[^\s]+/g, critical: false }
+];
+
+function detectPII(result){
+  if (!result.rows || !result.columns) return;
+  const findings = [];
+  result.columns.forEach((col, i) => {
+    const values = result.rows.map(r => String(r[i] || '')).filter(Boolean);
+    PII_PATTERNS.forEach(p => {
+      const matches = [];
+      values.slice(0, 500).forEach(v => {
+        const m = v.match(p.regex);
+        if (m) matches.push(...m);
+      });
+      if (matches.length > 0){
+        findings.push({
+          type: p.name, critical: p.critical, column: col,
+          count: matches.length,
+          samples: [...new Set(matches)].slice(0, 3)
+        });
+      }
+    });
+  });
+  result.pii = findings;
+  result.piiTotal = findings.reduce((a, f) => a + f.count, 0);
+}
+
+// ====================================================================
+// MODULE BUDGÉTAIRE ARMA (fallback pour tableaux plats)
+// ====================================================================
+const ARMA_BUDGET_KEYWORDS = {
+  plan:       ['план', 'планов', 'затверджен', 'передбачен', 'призначен', 'plan'],
+  fact:       ['факт', 'касов', 'виконан', 'сплачен', 'перерахован', 'fact', 'actual'],
+  code_prog:  ['кпквк', 'код програм', 'програмн', 'кпк', 'code'],
+  code_ec:    ['кекв', 'економічн', 'класифікац', 'kekv'],
+  manager:    ['головн', 'розпорядник', 'відповідальн', 'manager', 'responsable'],
+  year:       ['рік', 'період', 'year', 'date']
+};
+
+function detectBudgetColumns(columns){
+  const found = {};
+  const lowerCols = columns.map(c => ({ orig: c, low: String(c).toLowerCase() }));
+  for (const [role, kws] of Object.entries(ARMA_BUDGET_KEYWORDS)){
+    const match = lowerCols.find(c => kws.some(k => c.low.includes(k)));
+    if (match) found[role] = match.orig;
+  }
+  return found;
+}
+
+function parseBudgetNumber(v){
+  if (v === null || v === undefined || v === '') return null;
+  let s = String(v).replace(/\s|\u00a0/g, '').replace(',', '.');
+  if (/^\d{1,3}(\.\d{3})+,\d+$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+  const n = Number(s);
+  return isNaN(n) ? null : n;
+}
+
+function analyzeARMA_Budget(result){
+  if (!result.rows || !result.columns) return null;
+  const cols = detectBudgetColumns(result.columns);
+  if (!cols.plan || !cols.fact){
+    return { detected: false, reason: 'Колонки «план» і «факт» не виявлено', columns: cols };
+  }
+
+  const iPlan = result.columns.indexOf(cols.plan);
+  const iFact = result.columns.indexOf(cols.fact);
+  const iCode = cols.code_prog ? result.columns.indexOf(cols.code_prog) : -1;
+  const iMgr  = cols.manager   ? result.columns.indexOf(cols.manager)   : -1;
+
+  let totalPlan = 0, totalFact = 0;
+  const byProgram = new Map();
+  const anomalies = [];
+
+  result.rows.forEach((row, idx) => {
+    const plan = parseBudgetNumber(row[iPlan]);
+    const fact = parseBudgetNumber(row[iFact]);
+    if (plan === null && fact === null) return;
+    const p = plan ?? 0;
+    const f = fact ?? 0;
+    totalPlan += p;
+    totalFact += f;
+
+    const code = iCode >= 0 ? String(row[iCode] || '').trim() : '(без коду)';
+    const mgr  = iMgr  >= 0 ? String(row[iMgr]  || '').trim() : '';
+    if (!byProgram.has(code)) byProgram.set(code, { plan: 0, fact: 0, mgr, lines: 0 });
+    const entry = byProgram.get(code);
+    entry.plan += p;
+    entry.fact += f;
+    entry.lines++;
+
+    if (f > p * 1.05 && p > 0){
+      anomalies.push({ line: idx + 2, code, plan: p, fact: f, ecart: f - p, type: 'перевищення' });
+    }
+    if (p === 0 && f > 0){
+      anomalies.push({ line: idx + 2, code, plan: 0, fact: f, ecart: f, type: 'витрати без бюджету' });
+    }
+  });
+
+  const tauxExecution = totalPlan > 0 ? (totalFact / totalPlan) * 100 : 0;
+  const ecartGlobal = totalFact - totalPlan;
+
+  const programList = [...byProgram.entries()].map(([code, v]) => ({
+    code, plan: v.plan, fact: v.fact, ecart: v.fact - v.plan,
+    taux: v.plan > 0 ? (v.fact / v.plan) * 100 : null,
+    mgr: v.mgr, lines: v.lines
+  }));
+  programList.sort((a, b) => Math.abs(b.ecart) - Math.abs(a.ecart));
+
+  return {
+    detected: true, columns: cols,
+    totals: { plan: totalPlan, fact: totalFact, ecart: ecartGlobal, taux: tauxExecution },
+    programs: programList.slice(0, 30),
+    anomalies: anomalies.slice(0, 50),
+    pluriannual: null
+  };
+}
+
+function renderARMA_Budget(analysis){
+  if (!analysis) return '';
+  if (!analysis.detected){
+    return `
+      <div class="analysis-section">
+        <h3><span>💰 Бюджетний аналіз АРМА</span></h3>
+        <div class="insight info">
+          <span class="ico">ℹ️</span>
+          <span class="txt">${escapeHtml(analysis.reason)}. Виявлені колонки : ${Object.entries(analysis.columns).map(([k,v]) => `<code>${k}=${escapeHtml(v)}</code>`).join(' · ') || '—'}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  const t = analysis.totals;
+  const tauxCls = t.taux >= 95 && t.taux <= 105 ? 'good' : (t.taux >= 80 ? 'warn' : 'bad');
+  const tauxLabel = t.taux >= 100 ? 'Перевищення' : 'Недовиконання';
+
+  const fmtUAH = (n) => {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    const abs = Math.abs(n);
+    if (abs >= 1e9) return (n/1e9).toFixed(2) + ' млрд ₴';
+    if (abs >= 1e6) return (n/1e6).toFixed(2) + ' млн ₴';
+    if (abs >= 1e3) return (n/1e3).toFixed(1) + ' тис ₴';
+    return n.toLocaleString('uk-UA') + ' ₴';
+  };
+
+  return `
+    <div class="analysis-section">
+      <h3><span>💰 Бюджетний аналіз АРМА</span></h3>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="lbl">План</div><div class="val" style="font-size:15px">${fmtUAH(t.plan)}</div></div>
+        <div class="stat-box"><div class="lbl">Факт</div><div class="val" style="font-size:15px">${fmtUAH(t.fact)}</div></div>
+        <div class="stat-box ${tauxCls}">
+          <div class="lbl">Виконання</div>
+          <div class="val">${t.taux.toFixed(1)}%</div>
+          <div class="unit">${tauxLabel}</div>
+        </div>
+        <div class="stat-box ${t.ecart > 0 ? 'bad' : 'good'}">
+          <div class="lbl">Відх. (₴)</div>
+          <div class="val" style="font-size:15px">${t.ecart > 0 ? '+' : ''}${fmtUAH(t.ecart)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ====================================================================
+// RENDU D'ANALYSE
+// ====================================================================
+function renderAnalysis(a, res){
+  if (a.error) return `<div class="error-box">⚠️ ${escapeHtml(a.error)}</div>`;
+  
+  // ⭐ Si c'est un паспорт ARMA → rendu dédié
+  if (a.isARMAPassport && a.armaPassport){
+    const statsGrid = `
+      <div class="stat-grid">
+        <div class="stat-box"><div class="lbl">Розмір</div><div class="val">${formatBytes(a.stats.size)}</div></div>
+        <div class="stat-box"><div class="lbl">Рядків</div><div class="val">${formatNumber(a.stats.rows || 0)}</div></div>
+        <div class="stat-box"><div class="lbl">Секцій</div><div class="val">${a.armaPassport.rawSections.length}</div></div>
+        <div class="stat-box"><div class="lbl">Завдань</div><div class="val">${a.armaPassport.meta.zavdannia.length}</div></div>
+        <div class="stat-box"><div class="lbl">Показників</div><div class="val">${
+          a.armaPassport.indicators.zatrat.length +
+          a.armaPassport.indicators.produktu.length +
+          a.armaPassport.indicators.efektyvnosti.length +
+          a.armaPassport.indicators.yakosti.length
+        }</div></div>
+      </div>
+    `;
+    return statsGrid + renderARMAPassport(a.armaPassport);
+  }
+  
+  const stats = a.stats;
+  const uid = a.id.replace(/[^a-zA-Z0-9]/g, '_');
+
+  const statsGrid = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="lbl">Розмір</div><div class="val">${formatBytes(stats.size)}</div></div>
+      ${stats.rows !== undefined ? `<div class="stat-box"><div class="lbl">Рядків</div><div class="val">${formatNumber(stats.rows)}</div></div>` : ''}
+      ${stats.columns !== undefined ? `<div class="stat-box"><div class="lbl">Колонок</div><div class="val">${stats.columns}</div></div>` : ''}
+      ${stats.separator ? `<div class="stat-box"><div class="lbl">Розділювач</div><div class="val" style="font-size:14px">${stats.separator === ';' ? ';' : ','}</div></div>` : ''}
+      ${a.duplicates ? `<div class="stat-box ${a.duplicates.count > 0 ? 'warn' : 'good'}"><div class="lbl">Дублікати</div><div class="val">${a.duplicates.count}</div></div>` : ''}
+      ${a.outliers.length ? `<div class="stat-box warn"><div class="lbl">Аномалії</div><div class="val">${a.outliers.length}</div></div>` : ''}
+      ${a.correlations.length ? `<div class="stat-box"><div class="lbl">Кореляції</div><div class="val">${a.correlations.length}</div></div>` : ''}
+      ${a.piiTotal ? `<div class="stat-box ${a.pii.some(p => p.critical) ? 'bad' : 'warn'}"><div class="lbl">PII</div><div class="val">${a.piiTotal}</div></div>` : ''}
+    </div>
+  `;
+
+  const armaBudgetHtml = a.armaBudget ? renderARMA_Budget(a.armaBudget) : '';
+
+  const insightsHtml = a.insights.length ? `
+    <div class="analysis-section">
+      <h3><span>🧠 Розумний аналіз</span></h3>
+      <div class="insight-list">
+        ${a.insights.map(i => `<div class="insight ${i.level}"><span class="ico">${i.ico}</span><span class="txt">${i.txt}</span></div>`).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const piiHtml = a.pii && a.pii.length ? `
+    <div class="analysis-section">
+      <h3><span>🔒 Виявлені персональні дані (${a.piiTotal})</span></h3>
+      <div class="pii-list">
+        ${a.pii.map(p => `
+          <div class="pii-row ${p.critical ? 'critical' : ''}">
+            <span class="pii-icon">${p.critical ? '🚨' : '⚠️'}</span>
+            <div class="pii-body">
+              <div class="pii-type">${escapeHtml(p.type)} — ${p.count} випадк${p.count > 1 ? 'ів' : ''}</div>
+              <div class="pii-col">Колонка : <strong>${escapeHtml(p.column)}</strong></div>
+              <div class="pii-sample">Напр. : ${p.samples.map(s => escapeHtml(s)).join(' · ')}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const chartsHtml = `
+    <div class="analysis-section">
+      <h3><span>📈 Графіки</span></h3>
+      <div class="charts-grid">
+        <div class="chart-card"><h4>📊 Типи</h4><div class="chart-canvas-wrap"><canvas id="chart-types-${uid}"></canvas></div></div>
+        <div class="chart-card"><h4>💧 Заповненість</h4><div class="chart-canvas-wrap"><canvas id="chart-fill-${uid}"></canvas></div></div>
+        <div class="chart-card"><h4>🔢 Кардинальність</h4><div class="chart-canvas-wrap"><canvas id="chart-unique-${uid}"></canvas></div></div>
+        ${a.columns.filter(c => a.columnStats[c]?.type === 'number').slice(0, 4).length ? `<div class="chart-card"><h4>📉 Розподіл</h4><div class="chart-canvas-wrap"><canvas id="chart-num-${uid}"></canvas></div></div>` : ''}
+        ${a.columns.filter(c => a.columnStats[c]?.type === 'string' && a.columnStats[c].unique <= 15 && a.columnStats[c].unique > 1).slice(0, 1).length ? `<div class="chart-card"><h4>🏷️ Топ категорій</h4><div class="chart-canvas-wrap"><canvas id="chart-cat-${uid}"></canvas></div></div>` : ''}
+      </div>
+    </div>
+  `;
+
+  const colsStats = Object.entries(a.columnStats).slice(0, 30).map(([col, s]) => `
+    <tr>
+      <td class="col-name">${escapeHtml(col)}</td><td>${s.type}</td>
+      <td>${formatNumber(s.nonEmpty)} / ${formatNumber(s.total)}</td>
+      <td>${(100*(1-s.emptyRatio)).toFixed(1)}%</td><td>${formatNumber(s.unique)}</td>
+      ${s.type === 'number' && s.min !== undefined ? `
+        <td>${formatNumber(s.min)}</td><td>${formatNumber(s.max)}</td>
+        <td>${formatNumber(s.mean)}</td><td>${formatNumber(s.median)}</td>
+      ` : `<td colspan="4" style="color:var(--grey-500);text-align:center">—</td>`}
+    </tr>
+  `).join('');
+
+  const statsTableHtml = Object.keys(a.columnStats).length ? `
+    <div class="analysis-section">
+      <h3><span>📋 Статистика за колонками</span></h3>
+      <div style="overflow-x:auto;max-height:400px;border:1px solid var(--grey-200);border-radius:4px">
+        <table class="stats-table">
+          <thead><tr><th>Колонка</th><th>Тип</th><th>Заповнено</th><th>%</th><th>Унікальних</th><th>Мін</th><th>Макс</th><th>Середнє</th><th>Медіана</th></tr></thead>
+          <tbody>${colsStats}</tbody>
+        </table>
+      </div>
+    </div>
+  ` : '';
+
+  const outliersHtml = a.outliers.length ? `
+    <div class="analysis-section">
+      <h3><span>⚠️ Аномальні значення (${a.outliers.length})</span></h3>
+      <div class="outlier-list">
+        ${a.outliers.slice(0, 20).map(o => `
+          <div class="outlier">
+            <div><strong>${escapeHtml(o.column)}</strong><div class="ctx">Рядок ${o.line} · ${o.context}</div></div>
+            <div class="val">${formatNumber(o.value)} ${o.direction === 'haut' ? '⬆️' : '⬇️'}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const corrHtml = a.correlations.length ? `
+    <div class="analysis-section">
+      <h3><span>🔗 Кореляції</span></h3>
+      <div class="corr-list">
+        ${a.correlations.map(c => `<div class="corr-row"><span class="pair">${escapeHtml(c.col1)} ↔ ${escapeHtml(c.col2)}</span><span class="val ${c.r > 0 ? 'pos' : 'neg'}">r = ${c.r.toFixed(2)}</span></div>`).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const previewHtml = a.preview && a.preview.length ? `
+    <div class="analysis-section">
+      <h3><span>👁️ Перегляд (10 рядків)</span></h3>
+      <div class="table-wrap">
+        <table class="preview">
+          <thead><tr>${a.columns.slice(0, 12).map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${a.preview.map(row => `
+              <tr>${a.columns.slice(0, 12).map((c, i) => {
+                const v = row[i];
+                const empty = v === '' || v === undefined || v === null;
+                const num = !empty && !isNaN(Number(String(v).replace(',', '.')));
+                return `<td class="${empty ? 'empty' : num ? 'number' : ''}">${empty ? '(порожньо)' : escapeHtml(String(v))}</td>`;
+              }).join('')}</tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  ` : '';
+
+  return `${statsGrid}${armaBudgetHtml}${insightsHtml}${piiHtml}${chartsHtml}${statsTableHtml}${outliersHtml}${corrHtml}${previewHtml}`;
+}
+
+// ====================================================================
+// GRAPHIQUES
+// ====================================================================
+function initChartsForAnalyzed(resources, datasetId){
+  resources.forEach((r, idx) => {
+    const resKey = `${datasetId}::${idx}`;
+    const a = state.expertiseCache.get(resKey);
+    if (a && !a.error && !a.isARMAPassport) initChartsForResource(resKey, a);
+  });
+}
+
+function initChartsForResource(resKey, a){
+  const uid = resKey.replace(/[^a-zA-Z0-9]/g, '_');
+  const typesCount = {};
+  Object.values(a.types || {}).forEach(t => typesCount[t] = (typesCount[t] || 0) + 1);
+  const typesCtx = document.getElementById(`chart-types-${uid}`);
+  if (typesCtx && Object.keys(typesCount).length){
+    state.charts.push(new Chart(typesCtx, {
+      type: 'doughnut',
+      data: { labels: Object.keys(typesCount), datasets: [{ data: Object.values(typesCount), backgroundColor: PALETTE.slice(0, Object.keys(typesCount).length) }] },
+      options: { ...CHART_OPTS, plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 12 } } } }
+    }));
+  }
+  const fillCtx = document.getElementById(`chart-fill-${uid}`);
+  if (fillCtx){
+    const cols = Object.keys(a.columnStats).slice(0, 15);
+    const rates = cols.map(c => (1 - a.columnStats[c].emptyRatio) * 100);
+    state.charts.push(new Chart(fillCtx, {
+      type: 'bar',
+      data: { labels: cols.map(c => c.length > 20 ? c.slice(0, 18) + '…' : c), datasets: [{ label: 'Заповненість (%)', data: rates, backgroundColor: rates.map(r => r > 90 ? '#18753c' : r > 60 ? '#FFD700' : '#c8102e') }] },
+      options: { ...CHART_OPTS, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+    }));
+  }
+  const uniqCtx = document.getElementById(`chart-unique-${uid}`);
+  if (uniqCtx){
+    const cols = Object.keys(a.columnStats).slice(0, 15);
+    state.charts.push(new Chart(uniqCtx, {
+      type: 'bar',
+      data: { labels: cols.map(c => c.length > 20 ? c.slice(0, 18) + '…' : c), datasets: [{ label: 'Унікальних', data: cols.map(c => a.columnStats[c].unique), backgroundColor: '#0057B7' }] },
+      options: { ...CHART_OPTS, indexAxis: 'y', plugins: { legend: { display: false } } }
+    }));
+  }
+  const numCtx = document.getElementById(`chart-num-${uid}`);
+  if (numCtx){
+    const numCols = a.columns.filter(c => a.columnStats[c]?.type === 'number').slice(0, 4);
+    if (numCols.length){
+      const datasets = numCols.map((c, i) => ({
+        label: c.length > 18 ? c.slice(0, 16) + '…' : c,
+        data: [a.columnStats[c].min, a.columnStats[c].q1, a.columnStats[c].median, a.columnStats[c].q3, a.columnStats[c].max],
+        backgroundColor: PALETTE[i % PALETTE.length] + '80',
+        borderColor: PALETTE[i % PALETTE.length], borderWidth: 2
+      }));
+      state.charts.push(new Chart(numCtx, {
+        type: 'bar',
+        data: { labels: ['Мін', 'Q1', 'Медіана', 'Q3', 'Макс'], datasets },
+        options: { ...CHART_OPTS }
+      }));
+    }
+  }
+  const catCtx = document.getElementById(`chart-cat-${uid}`);
+  if (catCtx){
+    const catCol = a.columns.find(c => a.columnStats[c]?.type === 'string' && a.columnStats[c].unique <= 15 && a.columnStats[c].unique > 1);
+    if (catCol && a.columnStats[catCol].top){
+      const top = a.columnStats[catCol].top;
+      state.charts.push(new Chart(catCtx, {
+        type: 'pie',
+        data: { labels: top.map(([k]) => k.length > 20 ? k.slice(0, 18) + '…' : k), datasets: [{ data: top.map(([,v]) => v), backgroundColor: PALETTE.slice(0, top.length) }] },
+        options: { ...CHART_OPTS, plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 10 } } } }
+      }));
+    }
+  }
+}
+
+// ====================================================================
+// SURVEILLANCE
+// ====================================================================
+function renderAlertsView(){
+  destroyCharts();
+  runSurveillance();
+  const alerts = state.alerts;
+
+  if (!alerts.length){
+    showResults(`
+      <div class="expert-zone">
+        <div class="expert-header">
+          <h2>🚨 Автоматичний моніторинг</h2>
+          <div class="sub">Алертів не виявлено серед ${state.datasets.length} наборів.</div>
+        </div>
+        <div class="analysis-section">
+          <div class="insight ok">
+            <span class="ico">✅</span>
+            <span class="txt">Усі набори відповідають порогам моніторингу.</span>
+          </div>
+        </div>
+      </div>
+    `);
+    return;
+  }
+
+  const criticalCount = alerts.filter(a => a.severity === 'critical').length;
+  const warnCount = alerts.filter(a => a.severity === 'warning').length;
+
+  showResults(`
+    <div class="expert-zone">
+      <div class="expert-header">
+        <h2>🚨 Автоматичний моніторинг</h2>
+        <div class="sub">
+          <strong>${alerts.length}</strong> алерт(ів) :
+          <strong style="color:var(--red)">${criticalCount} критичних</strong> ·
+          <strong style="color:var(--amber)">${warnCount} попереджень</strong>
+        </div>
+      </div>
+      <div class="analysis-section">
+        <h3><span>📋 Список алертів</span></h3>
+        <div class="alerts-list">
+          ${alerts.map(a => `
+            <div class="alert-item ${a.severity === 'critical' ? 'critical' : ''}" data-alert-id="${escapeHtml(a.datasetId)}">
+              <div class="head">
+                <div class="title">${escapeHtml(a.datasetTitle)}</div>
+                <span class="severity ${a.severity === 'critical' ? 'crit' : 'warn'}">${a.severity === 'critical' ? 'КРИТИЧНО' : 'УВАГА'}</span>
+              </div>
+              <div class="reason">${escapeHtml(a.reason)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `);
+
+  document.querySelectorAll('.alert-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const d = state.datasets.find(x => x.id === el.dataset.alertId);
+      if (d) selectDataset(d);
+    });
+  });
+}
+
+function runSurveillance(){
+  if (state.surveillanceRunning) return;
+  state.surveillanceRunning = true;
+  const alerts = [];
+  state.datasets.forEach(d => {
+    const age = daysSince(d.last_update);
+    const descLen = (d.description||'').length;
+    const tags = getTags(d);
+    const res = getResources(d);
+
+    if (age > 3650) alerts.push({ datasetId: d.id, datasetTitle: getTitle(d), severity: 'critical', reason: `⏳ Дані старші за ${Math.round(age/365)} років` });
+    else if (age > 1825) alerts.push({ datasetId: d.id, datasetTitle: getTitle(d), severity: 'warning', reason: `⏳ Старі дані (${Math.round(age/365)} р.)` });
+
+    if (descLen < 50) alerts.push({ datasetId: d.id, datasetTitle: getTitle(d), severity: descLen === 0 ? 'critical' : 'warning', reason: `📝 Опис ${descLen === 0 ? 'відсутній' : 'занадто короткий (' + descLen + ' симв.)'}` });
+
+    if (tags.length === 0) alerts.push({ datasetId: d.id, datasetTitle: getTitle(d), severity: 'warning', reason: '🏷️ Немає тегів' });
+
+    if (res.length === 0) alerts.push({ datasetId: d.id, datasetTitle: getTitle(d), severity: 'warning', reason: '📎 Немає прикріплених ресурсів' });
+
+    if (!d.url || !d.url.startsWith('https://')) alerts.push({ datasetId: d.id, datasetTitle: getTitle(d), severity: 'critical', reason: '🔗 URL відсутній або не HTTPS' });
+  });
+  state.alerts = alerts;
+  document.getElementById('tbAlerts').textContent = alerts.length;
+  document.getElementById('alertsTabBadge').textContent = alerts.length;
+  document.getElementById('ivAlerts').textContent = alerts.length;
+  state.surveillanceRunning = false;
+}
+
+// ====================================================================
+// VUE PII
+// ====================================================================
+function renderPIIView(){
+  destroyCharts();
+  const allPii = [];
+  state.expertiseCache.forEach((a, resKey) => {
+    if (a.pii && a.pii.length){
+      a.pii.forEach(p => allPii.push({ ...p, resKey, resTitle: a.title }));
+    }
+  });
+
+  if (!allPii.length){
+    showResults(`
+      <div class="expert-zone">
+        <div class="expert-header">
+          <h2>🔒 Виявлення персональних даних</h2>
+          <div class="sub">
+            ${state.expertiseCache.size === 0 ? 'Спочатку запустіть експертизу, щоб виявити PII.' : 'PII не виявлено в кеші.'}
+          </div>
+        </div>
+        <div class="analysis-section">
+          <div class="insight info">
+            <span class="ico">ℹ️</span>
+            <span class="txt">PII (email, телефони, IBAN, ІПН, ЄДРПОУ…) виявляються автоматично під час експертизи кожного ресурсу.</span>
+          </div>
+        </div>
+      </div>
+    `);
+    return;
+  }
+
+  const critical = allPii.filter(p => p.critical).length;
+
+  showResults(`
+    <div class="expert-zone">
+      <div class="expert-header">
+        <h2>🔒 Виявлення персональних даних</h2>
+        <div class="sub">
+          <strong>${allPii.length}</strong> тип(ів) PII :
+          <strong style="color:var(--red)">${critical} критичних</strong>
+        </div>
+      </div>
+      <div class="analysis-section">
+        <h3><span>🚨 Список PII</span></h3>
+        <div class="pii-list">
+          ${allPii.map(p => `
+            <div class="pii-row ${p.critical ? 'critical' : ''}">
+              <span class="pii-icon">${p.critical ? '🚨' : '⚠️'}</span>
+              <div class="pii-body">
+                <div class="pii-type">${escapeHtml(p.type)} — ${p.count} випадк${p.count > 1 ? 'ів' : ''}</div>
+                <div class="pii-col">Ресурс : <strong>${escapeHtml(p.resTitle || p.resKey)}</strong></div>
+                <div class="pii-col">Колонка : <strong>${escapeHtml(p.column)}</strong></div>
+                <div class="pii-sample">Напр. : ${p.samples.map(s => escapeHtml(s)).join(' · ')}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+// ====================================================================
+// COMPARAISON
+// ====================================================================
+function openCompareModal(d){
+  const others = state.datasets.filter(x => x.id !== d.id).slice(0, 100);
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-head">
+        <h3>🔀 Порівняти ${escapeHtml(getTitle(d).slice(0, 40))}…</h3>
+        <button class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:12px;color:var(--grey-700)">Виберіть другий набір для порівняння метаданих :</p>
+        <input type="text" id="compareSearch" placeholder="🔍 Фільтр…"
+          style="width:100%;padding:10px;border:1px solid var(--grey-200);border-radius:4px;margin-bottom:10px;font-size:13px">
+        <div id="compareList" style="max-height:400px;overflow-y:auto">
+          ${others.map(x => `
+            <div class="source-item" data-compare-id="${escapeHtml(x.id)}" style="margin-bottom:4px">
+              <div class="source-item-h">
+                <span class="source-item-name">${escapeHtml(getTitle(x))}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+  modal.querySelector('#compareSearch').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    modal.querySelectorAll('[data-compare-id]').forEach(el => {
+      const found = state.datasets.find(x => x.id === el.dataset.compareId);
+      el.style.display = (getTitle(found).toLowerCase().includes(q)) ? 'block' : 'none';
+    });
+  });
+
+  modal.querySelectorAll('[data-compare-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      const other = state.datasets.find(x => x.id === el.dataset.compareId);
+      if (other){
+        state.compareWith = other;
+        modal.remove();
+        renderExpertiseView();
+        showToast('🔀 Порівняння активовано', 'success');
+      }
+    });
+  });
+}
+
+function renderCompare(d1, d2){
+  const rows = [
+    ['Назва', getTitle(d1).length, getTitle(d2).length, 'симв.'],
+    ['Опис', (d1.description||'').length, (d2.description||'').length, 'симв.'],
+    ['Теги', getTags(d1).length, getTags(d2).length, ''],
+    ['Ресурси', getResources(d1).length, getResources(d2).length, ''],
+    ['Популярність', getPopularity(d1), getPopularity(d2), ''],
+    ['Оцінка', datasetScore(d1), datasetScore(d2), '/100'],
+    ['Вік', Math.round(daysSince(d1.last_update)/365*10)/10, Math.round(daysSince(d2.last_update)/365*10)/10, 'р.']
+  ];
+
+  return `
+    <div class="analysis-section">
+      <h3><span>🔀 Порівняння з « ${escapeHtml(getTitle(d2).slice(0, 40))} »</span></h3>
+      <div class="compare-grid">
+        <div class="compare-panel">
+          <h4>📌 ${escapeHtml(getTitle(d1).slice(0, 30))}</h4>
+          ${rows.map(r => `<div class="compare-row"><span class="k">${r[0]}</span><span class="v">${formatNumber(r[1])} ${r[3]}</span></div>`).join('')}
+        </div>
+        <div class="compare-panel">
+          <h4>📌 ${escapeHtml(getTitle(d2).slice(0, 30))}</h4>
+          ${rows.map(r => `<div class="compare-row"><span class="k">${r[0]}</span><span class="v">${formatNumber(r[2])} ${r[3]}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="compare-diff">
+        <strong>💡 Помітні відмінності :</strong>
+        ${rows.map(r => {
+          const diff = r[1] - r[2];
+          if (Math.abs(diff) > 0.5 * Math.max(Math.abs(r[1]), Math.abs(r[2]), 1))
+            return `<div>• ${r[0]} : ${formatNumber(r[1])} vs ${formatNumber(r[2])} (${diff > 0 ? '+' : ''}${formatNumber(diff)})</div>`;
+          return '';
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ====================================================================
+// EXPORT PDF
+// ====================================================================
+function exportDatasetPDF(d){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFillColor(0, 87, 183);
+  doc.rect(0, 0, 210, 30, 'F');
+  doc.setFillColor(255, 215, 0);
+  doc.rect(0, 30, 210, 3, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Монітор АРМА', 14, 15);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Звіт експертизи — ' + new Date().toLocaleString('uk-UA'), 14, 22);
+
+  doc.setTextColor(30, 30, 30);
+  let y = 45;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  const title = getTitle(d);
+  const titleLines = doc.splitTextToSize(title, 180);
+  doc.text(titleLines, 14, y);
+  y += titleLines.length * 7 + 6;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Організація : ${getOrg(d) || '—'}`, 14, y); y += 6;
+  doc.text(`ID : ${d.id}`, 14, y); y += 6;
+  doc.text(`Оновлено : ${formatDate(d.last_update)}`, 14, y); y += 6;
+  doc.text(`Оцінка : ${datasetScore(d)}/100`, 14, y); y += 10;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('Опис', 14, y); y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const desc = d.description || 'Опис відсутній';
+  const descLines = doc.splitTextToSize(desc, 180);
+  doc.text(descLines.slice(0, 15), 14, y);
+  y += Math.min(descLines.length, 15) * 4.5 + 8;
+
+  if (state.expertiseCache.size){
+    doc.addPage();
+    y = 20;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('Звіти аналізу', 14, y); y += 10;
+
+    state.expertiseCache.forEach((a, resKey) => {
+      if (y > 250){ doc.addPage(); y = 20; }
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`• ${(a.title || resKey).slice(0, 60)}`, 14, y); y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      if (a.error){
+        doc.setTextColor(200, 16, 46);
+        doc.text(`Помилка : ${a.error}`, 18, y); y += 6;
+        doc.setTextColor(30, 30, 30);
+      } else if (a.isARMAPassport && a.armaPassport){
+        doc.text(`Тип : Паспорт бюджетної програми`, 18, y); y += 5;
+        doc.text(`Секцій : ${a.armaPassport.rawSections.length}`, 18, y); y += 5;
+        if (a.armaPassport.budget?.total){
+          const t = a.armaPassport.budget.total;
+          doc.text(`Бюджет : План=${(t.plan_razom/1e3).toFixed(1)} тис ₴ · Факт=${(t.fakt_razom/1e3).toFixed(1)} тис ₴ · Вик.=${t.taux.toFixed(1)}%`, 18, y); y += 5;
+        }
+        const totalInd = a.armaPassport.indicators.zatrat.length + a.armaPassport.indicators.produktu.length + a.armaPassport.indicators.efektyvnosti.length + a.armaPassport.indicators.yakosti.length;
+        doc.text(`Показників : ${totalInd}`, 18, y); y += 5;
+      } else {
+        doc.text(`Формат : ${a.format.toUpperCase()} · Розмір : ${formatBytes(a.stats.size)}`, 18, y); y += 5;
+        doc.text(`Рядків : ${a.stats.rows || '—'} · Колонок : ${a.stats.columns || '—'}`, 18, y); y += 5;
+      }
+      y += 3;
+    });
+  }
+
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++){
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Стор. ${i} / ${totalPages} — Монітор АРМА`, 14, 290);
+  }
+
+  doc.save(`zvit_arma_${d.id}.pdf`);
+  showToast('📄 PDF сформовано', 'success');
+}
+
+// ====================================================================
+// TOUT EXPERTISER
+// ====================================================================
+async function analyzeAll(){
+  const targets = state.currentPageItems || state.datasets.slice(0, 25);
+  showToast(`🔬 Аналіз ${targets.length} наборів…`);
+  let processed = 0;
+  for (const d of targets){
+    const resources = getResources(d);
+    for (let idx = 0; idx < resources.length; idx++){
+      const resKey = `${d.id}::${idx}`;
+      if (state.expertiseCache.has(resKey)) continue;
+      await analyzeResource(resources[idx], resKey);
+      processed++;
+    }
+  }
+  updateCacheInfo();
+  showToast(`✅ Проаналізовано ${processed} ресурсів`, 'success');
+  if (state.selectedDataset) renderExpertiseView();
+}
+
+function updateCacheInfo(){
+  document.getElementById('ivCache').textContent = state.expertiseCache.size;
+}
+
+function addToHistory(action){
+  state.history.unshift({ action, time: new Date() });
+  state.history = state.history.slice(0, 10);
+  const el = document.getElementById('historyPanel');
+  if (!el) return;
+  el.innerHTML = state.history.map(h => `
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;
+                border-bottom:1px solid var(--grey-100)">
+      <span>${escapeHtml(h.action)}</span>
+      <span style="color:var(--grey-500);font-family:var(--font-mono);font-size:10px">
+        ${h.time.toLocaleTimeString('uk-UA', {hour:'2-digit',minute:'2-digit'})}
+      </span>
+    </div>
+  `).join('');
+}
+
+// ====================================================================
+// PAGINATION
+// ====================================================================
+function updatePaginationUI(totalPages, current){
+  document.getElementById('paginationInfo').innerHTML =
+    `<strong>${state.totalResults.toLocaleString('uk-UA')}</strong> результатів · стор. <strong>${current}</strong> / ${totalPages}`;
+  document.getElementById('pageInput').value = current;
+  document.getElementById('pageInput').max = totalPages;
+  document.getElementById('pageTotal').textContent = `/ ${totalPages}`;
+  document.getElementById('pageFirst').disabled = current <= 1;
+  document.getElementById('pagePrev').disabled = current <= 1;
+  document.getElementById('pageNext').disabled = current >= totalPages;
+  document.getElementById('pageLast').disabled = current >= totalPages;
+  document.getElementById('paginationBar').hidden = false;
+}
+function goToPage(p){
+  const totalPages = Math.max(1, Math.ceil(state.totalResults / state.pageSize));
+  runSearch(Math.max(1, Math.min(totalPages, p)));
+}
+document.getElementById('pageFirst').addEventListener('click', () => goToPage(1));
+document.getElementById('pagePrev').addEventListener('click', () => goToPage(state.currentPage - 1));
+document.getElementById('pageNext').addEventListener('click', () => goToPage(state.currentPage + 1));
+document.getElementById('pageLast').addEventListener('click', () => goToPage(Math.ceil(state.totalResults / state.pageSize)));
+document.getElementById('pageInput').addEventListener('change', (e) => goToPage(parseInt(e.target.value)||1));
+document.getElementById('pageSizeSelect').addEventListener('change', (e) => {
+  state.pageSize = parseInt(e.target.value);
+  runSearch(1);
+});
+
+document.querySelectorAll('.view-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.view-tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    state.currentView = t.dataset.view;
+    if (state.currentView === 'expert') renderExpertiseView();
+    else if (state.currentView === 'alerts') renderAlertsView();
+    else if (state.currentView === 'pii') renderPIIView();
+    else runSearch(state.currentPage);
+  });
+});
+
+document.getElementById('searchBtn').addEventListener('click', () => runSearch(1));
+document.getElementById('queryInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') runSearch(1); });
+document.getElementById('sortSelect').addEventListener('change', () => runSearch(1));
+document.getElementById('sourceSearch').addEventListener('input', renderCategories);
+
+document.getElementById('analyzeAll').addEventListener('click', analyzeAll);
+document.getElementById('runSurveillance').addEventListener('click', () => {
+  state.currentView = 'alerts';
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === 'alerts'));
+  renderAlertsView();
+  addToHistory('Запуск моніторингу');
+});
+document.getElementById('scanPII').addEventListener('click', () => {
+  state.currentView = 'pii';
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === 'pii'));
+  renderPIIView();
+  addToHistory('Скан PII');
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  updateCacheInfo();
+});
+</script>
+</body>
+</html>
